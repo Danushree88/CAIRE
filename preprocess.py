@@ -1,14 +1,10 @@
 import pandas as pd
 import json
 
-# ========================
-# 1. Load dataset
-# ========================
+# Load dataset
 df = pd.read_csv("cart_abandonment_dataset.csv")
 
-# ========================
-# 2. Missing Values Handling
-# ========================
+#  Missing Values Handling
 for col in df.columns:
     if df[col].isnull().sum() > 0:
         if df[col].dtype in ['int64','float64']:
@@ -16,20 +12,16 @@ for col in df.columns:
         else:
             df[col].fillna(df[col].mode()[0], inplace=True)
 
-# ========================
-# 3. Separate Features & Target
-# ========================
+
+# Separate Features & Target
 y = df["abandoned"]
 X = df.drop("abandoned", axis=1)
 
-# Keep IDs
 id_cols = ["session_id", "user_id"]
 id_data = X[id_cols]
 X = X.drop(id_cols, axis=1)
 
-# ========================
-# 4. Encode Categorical
-# ========================
+#  Encode Categorical
 categorical_cols = [
     "day_of_week", "time_of_day", "device_type", "browser", 
     "referral_source", "location", "most_viewed_category"
@@ -43,9 +35,8 @@ for col in categorical_cols:
     label_encoders[col] = mapping
     X[col] = X[col].map(mapping)
 
-# ========================
-# 5. Standardize Numerical
-# ========================
+
+# Standardize Numerical
 scaler_info = {}
 for col in numerical_cols:
     mean_val = X[col].mean()
@@ -53,9 +44,8 @@ for col in numerical_cols:
     scaler_info[col] = {"mean": mean_val, "std": std_val}
     X[col] = (X[col] - mean_val) / std_val if std_val != 0 else 0
 
-# ========================
-# 6. Save Preprocessed Data
-# ========================
+
+# Save Preprocessed Data
 processed_df = pd.concat([id_data, X, y], axis=1)
 processed_df.to_csv("cart_abandonment_preprocessed.csv", index=False)
 
