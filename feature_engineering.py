@@ -2,13 +2,13 @@ import pandas as pd
 import numpy as np
 import json
 
-#  Load preprocessed data
 df = pd.read_csv("cart_abandonment_preprocessed.csv")
 
 with open("label_encoders.json", "r") as f:
     label_encoders = json.load(f)
 
 # Feature Engineering
+
 df["time_per_item"] = df.apply(
     lambda row: row["session_duration"] / row["num_items_carted"] if row["num_items_carted"] > 0 else 0, axis=1
 )
@@ -42,6 +42,7 @@ df["discount_to_cart_ratio"] = df.apply(
 )
 
 # Cyclical Encoding
+
 df["day_sin"] = np.sin(2 * np.pi * df["day_of_week"].astype(float) / 7)
 df["day_cos"] = np.cos(2 * np.pi * df["day_of_week"].astype(float) / 7)
 
@@ -49,8 +50,32 @@ df["time_sin"] = np.sin(2 * np.pi * df["time_of_day"].astype(float) / 4)
 df["time_cos"] = np.cos(2 * np.pi * df["time_of_day"].astype(float) / 4)
 
 
-# Save Featured Data
+# PCA
 
+X = df.select_dtypes(include=["float64", "int64"]).to_numpy()
+cov_matrix = np.cov(X, rowvar=False)
+eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)
+idx = np.argsort(eigenvalues)[::-1]
+eigenvectors = eigenvectors[:, idx]
+X_pca = np.dot(X, eigenvectors[:, :2])
+df["pca1"] = X_pca[:, 0]
+df["pca2"] = X_pca[:, 1]
+
+
+# Feature Selection (Correlation with Target)
+
+if "abandoned" in df.columns:
+    corr = df.corr(numeric_only=True)["abandoned"].sort_values(ascending=False)
+    print("\n🔹 Feature correlations with target:")
+    print(corr)
+
+
+# Transformations
+df["log_cart_value"] = np.log1p(df["cart_value"])
+df["cart_value_bin"] = pd.qcut(df["cart_value"], q=3, labels=["Low", "Medium", "High"])
+
+
+# Save Featured Data
 df.to_csv("cart_abandonment_featured.csv", index=False)
 
 print("Feature engineering complete. Saved as cart_abandonment_featured.csv")
