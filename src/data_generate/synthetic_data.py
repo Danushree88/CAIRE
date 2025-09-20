@@ -115,5 +115,5 @@ df = pd.DataFrame({
 })
 
 
-df.to_csv("cart_abandonment_dataset.csv", index=False)
+df.to_csv("../../data/cart_abandonment_dataset.csv", index=False)
 print(df.head(10))

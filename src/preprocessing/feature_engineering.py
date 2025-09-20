@@ -1,13 +1,19 @@
 import pandas as pd
 import numpy as np
 import json
+import os
 
-df = pd.read_csv("cart_abandonment_preprocessed.csv")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DATA_DIR = os.path.join(BASE_DIR, "data")
 
-with open("label_encoders.json", "r") as f:
+PROCESSED_PATH = os.path.join(DATA_DIR, "cart_abandonment_preprocessed.csv")
+FEATURED_PATH = os.path.join(DATA_DIR, "cart_abandonment_featured.csv")
+ENCODERS_PATH = os.path.join(DATA_DIR, "label_encoders.json")
+
+df = pd.read_csv(PROCESSED_PATH)
+
+with open(ENCODERS_PATH, "r") as f:
     label_encoders = json.load(f)
-
-# Feature Engineering
 
 df["time_per_item"] = df.apply(
     lambda row: row["session_duration"] / row["num_items_carted"] if row["num_items_carted"] > 0 else 0, axis=1
@@ -19,7 +25,6 @@ weekend_labels = [
 ]
 
 df["is_weekend"] = df["day_of_week"].apply(lambda x: 1 if x in weekend_labels else 0)
-
 
 df["pages_per_minute"] = df.apply(
     lambda row: row["num_pages_viewed"] / (row["session_duration"]/60) if row["session_duration"] > 0 else 0, axis=1
@@ -41,16 +46,11 @@ df["discount_to_cart_ratio"] = df.apply(
     lambda row: row["discount_applied"] / (row["cart_value"] + 1), axis=1
 )
 
-# Cyclical Encoding
-
 df["day_sin"] = np.sin(2 * np.pi * df["day_of_week"].astype(float) / 7)
 df["day_cos"] = np.cos(2 * np.pi * df["day_of_week"].astype(float) / 7)
 
 df["time_sin"] = np.sin(2 * np.pi * df["time_of_day"].astype(float) / 4)
 df["time_cos"] = np.cos(2 * np.pi * df["time_of_day"].astype(float) / 4)
-
-
-# PCA
 
 X = df.select_dtypes(include=["float64", "int64"]).to_numpy()
 cov_matrix = np.cov(X, rowvar=False)
@@ -61,24 +61,16 @@ X_pca = np.dot(X, eigenvectors[:, :2])
 df["pca1"] = X_pca[:, 0]
 df["pca2"] = X_pca[:, 1]
 
-
-# Feature Selection (Correlation with Target)
-
 if "abandoned" in df.columns:
     corr = df.corr(numeric_only=True)["abandoned"].sort_values(ascending=False)
     print("\n🔹 Feature correlations with target:")
     print(corr)
 
-
-# Transformations
 df["log_cart_value"] = np.log1p(df["cart_value"])
 df["cart_value_bin"] = pd.qcut(df["cart_value"], q=3, labels=["Low", "Medium", "High"])
 
+df.to_csv(FEATURED_PATH, index=False)
+print(f"✅ Feature engineering complete. Saved as {FEATURED_PATH}")
 
-# Save Featured Data
-df.to_csv("cart_abandonment_featured.csv", index=False)
-
-print("Feature engineering complete. Saved as cart_abandonment_featured.csv")
-
-print(df[["day_of_week","day_sin","day_cos","time_of_day","time_sin","time_cos"]].head())
-print(df[["day_of_week","time_of_day"]].dtypes)
+print(df[["day_of_week", "day_sin", "day_cos", "time_of_day", "time_sin", "time_cos"]].head())
+print(df[["day_of_week", "time_of_day"]].dtypes)
