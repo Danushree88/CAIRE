@@ -63,7 +63,7 @@ class EDAApp:
         if self.target in self.df.columns:
             st.subheader(f"{col} vs Target ({self.target})")
             fig, ax = plt.subplots(figsize=(7, 4))
-            sns.countplot(data=self.df, x=col, hue=self.target, palette="pastel")
+            sns.countplot(x=self.target, data=self.df, hue=self.target, palette="pastel", legend=False)
             plt.xticks(rotation=30)
             st.pyplot(fig)
 
@@ -105,7 +105,7 @@ class EDAApp:
         if self.target in self.df.columns:
             st.subheader("Target Distribution")
             fig, ax = plt.subplots(figsize=(6, 4))
-            sns.countplot(x=self.target, data=self.df, palette="pastel")
+            sns.countplot(x=self.target, data=self.df, color="skyblue")
             st.pyplot(fig)
         else:
             st.error(f"No target column '{self.target}' found!")
