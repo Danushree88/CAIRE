@@ -150,15 +150,6 @@ class FeatureEngineeringTab(BaseTab):
             fe.correlation_report()
             fe.save_features()
 
-            # Save PCA loadings for later display
-            if hasattr(fe, "pca") and fe.pca is not None:
-                loadings = pd.DataFrame(
-                    fe.pca.components_.T,
-                    index=fe.numeric_cols,
-                    columns=[f"PC{i+1}" for i in range(fe.pca.n_components_)]
-                )
-                loadings.to_csv(PCA_LOADINGS_PATH)
-
         df = self.load_data(FEATURED_PATH)
         if df is None:
             st.error("Failed to load featured data")
@@ -166,14 +157,13 @@ class FeatureEngineeringTab(BaseTab):
 
         sub_tabs = st.tabs(["New Features Overview", "PCA Results"])
 
-        # New Features
         with sub_tabs[0]:
             st.subheader("Newly Added Features")
             new_features = [
-                "time_per_item", "is_weekend", "pages_per_minute",
-                "scroll_ratio", "avg_item_price", "shipping_to_cart_ratio",
-                "discount_to_cart_ratio", "day_sin", "day_cos", "time_sin",
-                "time_cos", "pca1", "pca2"
+                "engagement_intensity", "scroll_engagement", "is_weekend",
+                "has_multiple_items", "has_high_engagement", "research_behavior",
+                "quick_browse", "engagement_score", "peak_hours", "returning_peak",
+                "day_sin", "day_cos", "time_sin", "time_cos", "pca1", "pca2"
             ]
 
             added = [f for f in new_features if f in df.columns]
@@ -210,7 +200,6 @@ class FeatureEngineeringTab(BaseTab):
                 mime="text/csv",
             )
 
-        # PCA Visualization
         with sub_tabs[1]:
             st.subheader("PCA Projection (2D)")
 
@@ -249,7 +238,6 @@ class FeatureEngineeringTab(BaseTab):
 
             else:
                 st.warning("PCA components not found in dataset.")
-
 
 class CartAbandonmentDashboard:
     def __init__(self):
