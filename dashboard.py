@@ -1,12 +1,17 @@
 import streamlit as st
 import os
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+
+from custom_styles import (
+    load_custom_css, create_header, create_section, 
+    info_box, success_box, warning_box, error_box,
+    create_stat_card, create_comparison_table, add_footer
+)
 
 from eda import EDAApp
 from src.preprocessing.preprocess import CartAbandonmentPreprocessor
 from src.preprocessing.feature_engineering import FeatureEngineer
+from modeling_evaluation import ModelingEvaluationTab
 
 
 class BaseTab:
@@ -25,23 +30,24 @@ class BaseTab:
 
 class EDATab(BaseTab):
     def __init__(self):
-        super().__init__("EDA (Raw Data)")
+        super().__init__("📊 EDA (Raw Data)")
 
     def run(self):
-        st.header("Exploratory Data Analysis (Raw Dataset)")
+        create_header("Exploratory Data Analysis", "Raw Dataset Insights", "📊")
+        
         RAW_PATH = os.path.join("data", "cart_abandonment_dataset.csv")
         df = self.load_data(RAW_PATH)
 
         if df is None:
-            st.error(f"Raw dataset not found at {RAW_PATH}")
+            error_box(f"Raw dataset not found at {RAW_PATH}")
             return
 
         app = EDAApp(df)
         app.dataset_overview()
         app.missing_values()
 
-        st.subheader("Analysis")
-        tabs = st.tabs(["Categorical", "Numerical", "Target", "Correlation"])
+        create_section("Data Analysis", "🔍")
+        tabs = st.tabs(["📈 Categorical", "📊 Numerical", "🎯 Target", "🔗 Correlation"])
 
         with tabs[0]:
             col = st.selectbox("Select Categorical Column",
@@ -59,9 +65,10 @@ class EDATab(BaseTab):
         with tabs[3]:
             app.correlation_analysis()
 
+        st.markdown("---")
         csv = df.to_csv(index=False)
         st.download_button(
-            label="Download Raw Data as CSV",
+            label="📥 Download Raw Data as CSV",
             data=csv,
             file_name="cart_abandonment_raw.csv",
             mime="text/csv",
@@ -70,10 +77,10 @@ class EDATab(BaseTab):
 
 class PreprocessingTab(BaseTab):
     def __init__(self):
-        super().__init__("Preprocessing")
+        super().__init__("🔧 Preprocessing")
 
     def run(self):
-        st.header("Data Preprocessing")
+        create_header("Data Preprocessing", "Cleaning & Transformation", "🔧")
 
         RAW_PATH = os.path.join("data", "cart_abandonment_dataset.csv")
         PROCESSED_PATH = os.path.join("data", "cart_abandonment_preprocessed.csv")
@@ -82,24 +89,26 @@ class PreprocessingTab(BaseTab):
 
         df_raw = self.load_data(RAW_PATH)
         if df_raw is None:
-            st.error(f"Raw dataset not found at {RAW_PATH}")
+            error_box(f"Raw dataset not found at {RAW_PATH}")
             return
 
-        with st.spinner("Preprocessing data..."):
-            preprocessor = CartAbandonmentPreprocessor(RAW_PATH, PROCESSED_PATH, ENCODERS_PATH, SCALER_PATH)
-            preprocessor.run()
+        if st.button("🚀 Run Preprocessing", type="primary", use_container_width=True):
+            with st.spinner("⏳ Processing data..."):
+                preprocessor = CartAbandonmentPreprocessor(RAW_PATH, PROCESSED_PATH, ENCODERS_PATH, SCALER_PATH)
+                preprocessor.run()
+            success_box("✅ Preprocessing completed successfully!")
 
         df = self.load_data(PROCESSED_PATH)
         if df is None:
-            st.error("Failed to load processed data")
+            info_box("Run preprocessing to generate processed data")
             return
 
         app = EDAApp(df)
         app.dataset_overview()
         app.missing_values()
 
-        st.subheader("Analysis")
-        tabs = st.tabs(["Categorical", "Numerical", "Target", "Correlation"])
+        create_section("Preprocessed Data Analysis", "🔍")
+        tabs = st.tabs(["📈 Categorical", "📊 Numerical", "🎯 Target", "🔗 Correlation"])
 
         with tabs[0]:
             col = st.selectbox("Select Categorical Column",
@@ -117,9 +126,10 @@ class PreprocessingTab(BaseTab):
         with tabs[3]:
             app.correlation_analysis()
 
+        st.markdown("---")
         csv = df.to_csv(index=False)
         st.download_button(
-            label="Download Processed Data as CSV",
+            label="📥 Download Processed Data as CSV",
             data=csv,
             file_name="cart_abandonment_processed.csv",
             mime="text/csv",
@@ -128,10 +138,10 @@ class PreprocessingTab(BaseTab):
 
 class FeatureEngineeringTab(BaseTab):
     def __init__(self):
-        super().__init__("Feature Engineering")
+        super().__init__("✨ Feature Engineering")
 
     def run(self):
-        st.header("Feature Engineering")
+        create_header("Feature Engineering", "Creating & Optimizing Features", "✨")
 
         PROCESSED_PATH = os.path.join("data", "cart_abandonment_preprocessed.csv")
         FEATURED_PATH = os.path.join("data", "cart_abandonment_featured.csv")
@@ -140,25 +150,27 @@ class FeatureEngineeringTab(BaseTab):
 
         df_processed = self.load_data(PROCESSED_PATH)
         if df_processed is None:
-            st.error("Preprocessed dataset not found. Please run preprocessing first.")
+            error_box("Preprocessed dataset not found. Please run preprocessing first.")
             return
 
-        with st.spinner("Engineering features..."):
-            fe = FeatureEngineer(PROCESSED_PATH, ENCODERS_PATH, FEATURED_PATH)
-            fe.create_features()
-            fe.apply_pca()
-            fe.correlation_report()
-            fe.save_features()
+        if st.button("⚙️ Run Feature Engineering", type="primary", use_container_width=True):
+            with st.spinner("⏳ Engineering features..."):
+                fe = FeatureEngineer(PROCESSED_PATH, ENCODERS_PATH, FEATURED_PATH)
+                fe.create_features()
+                fe.apply_pca()
+                fe.correlation_report()
+                fe.save_features()
+            success_box("✅ Feature engineering completed successfully!")
 
         df = self.load_data(FEATURED_PATH)
         if df is None:
-            st.error("Failed to load featured data")
+            info_box("Run feature engineering to generate featured data")
             return
 
-        sub_tabs = st.tabs(["New Features Overview", "PCA Results"])
+        sub_tabs = st.tabs(["🆕 New Features", "📐 PCA Results"])
 
         with sub_tabs[0]:
-            st.subheader("Newly Added Features")
+            create_section("Newly Added Features", "🆕")
             new_features = [
                 "engagement_intensity", "scroll_engagement", "is_weekend",
                 "has_multiple_items", "has_high_engagement", "research_behavior",
@@ -182,82 +194,115 @@ class FeatureEngineeringTab(BaseTab):
                         "NA Count": int(df[feature].isna().sum())
                     })
 
-                st.dataframe(pd.DataFrame(feature_info))
-
+                create_comparison_table(pd.DataFrame(feature_info))
             else:
-                st.info("No new features detected.")
+                info_box("No new features detected.")
 
-            st.subheader("Full Dataset with Features")
+            create_section("Full Dataset with Features", "📊")
             app = EDAApp(df)
             app.dataset_overview()
             app.missing_values()
 
+            st.markdown("---")
             csv = df.to_csv(index=False)
             st.download_button(
-                label="Download Featured Data as CSV",
+                label="📥 Download Featured Data as CSV",
                 data=csv,
                 file_name="cart_abandonment_featured.csv",
                 mime="text/csv",
             )
 
         with sub_tabs[1]:
-            st.subheader("PCA Projection (2D)")
+            create_section("PCA Projection (2D)", "📐")
 
             if "pca1" in df.columns and "pca2" in df.columns:
-                fig, ax = plt.subplots(figsize=(8, 6))
+                import matplotlib.pyplot as plt
+                import seaborn as sns
+                
+                fig, ax = plt.subplots(figsize=(10, 6))
                 sns.scatterplot(
                     data=df, x="pca1", y="pca2",
                     hue="abandoned" if "abandoned" in df.columns else None,
-                    palette="Set2", alpha=0.7
+                    palette="Set2", alpha=0.7, s=100
                 )
-                ax.set_title("PCA Scatter Plot (pca1 vs pca2)")
+                ax.set_title("PCA Scatter Plot (pca1 vs pca2)", fontsize=14, fontweight='bold')
+                ax.set_facecolor('#1e293b')
+                fig.patch.set_facecolor('#0f172a')
                 st.pyplot(fig)
 
-                st.markdown("""
-                **Inference from PCA:**
-                - PCA1 captures the largest variance in user session behavior, strongly separating abandoned vs non-abandoned sessions.
-                - PCA2 adds complementary variance but contributes less compared to PCA1.
-                - The scatter plot shows clusters, suggesting that user behavior patterns differ significantly between the two groups.
+                info_box("""
+                **PCA Analysis:**
+                - PCA1 captures the largest variance in user session behavior
+                - Clear separation between abandoned vs non-abandoned sessions
+                - PCA2 provides complementary variance
                 """)
 
-                # Load PCA Feature Contributions
                 if os.path.exists(PCA_LOADINGS_PATH):
                     loadings = pd.read_csv(PCA_LOADINGS_PATH, index_col=0)
-                    st.subheader("PCA Feature Contributions")
+                    create_section("PCA Feature Contributions", "📊")
                     st.write("**Contribution of original features to PC1 and PC2**")
 
-                    st.dataframe(loadings.style.format("{:.4f}"))
+                    create_comparison_table(loadings)
 
-                    st.markdown("**Top Contributors to PC1:**")
-                    st.write(loadings["PC1"].abs().sort_values(ascending=False).head(5))
-
-                    st.markdown("**Top Contributors to PC2:**")
-                    st.write(loadings["PC2"].abs().sort_values(ascending=False).head(5))
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.markdown("**Top Contributors to PC1:**")
+                        st.dataframe(loadings["PC1"].abs().sort_values(ascending=False).head(5))
+                    with col2:
+                        st.markdown("**Top Contributors to PC2:**")
+                        st.dataframe(loadings["PC2"].abs().sort_values(ascending=False).head(5))
                 else:
-                    st.info("PCA loadings not found. Please rerun feature engineering.")
-
+                    warning_box("PCA loadings not found. Please rerun feature engineering.")
             else:
-                st.warning("PCA components not found in dataset.")
+                warning_box("PCA components not found in dataset.")
+
 
 class CartAbandonmentDashboard:
     def __init__(self):
         self.tabs = [
             EDATab(),
             PreprocessingTab(),
-            FeatureEngineeringTab()
+            FeatureEngineeringTab(),
+            ModelingEvaluationTab()  
         ]
 
     def run(self):
-        st.set_page_config(page_title="Cart Abandonment Dashboard", layout="wide")
-        st.title("Cart Abandonment Dashboard")
+        st.set_page_config(
+            page_title="Cart Abandonment Dashboard",
+            page_icon="🛒",
+            layout="wide",
+            initial_sidebar_state="collapsed"
+        )
 
-        BaseTab.ensure_data_directory()
+        load_custom_css()
+
+        st.markdown("""
+        <div style='text-align: center; padding: 30px 0 20px 0;'>
+            <h1 style='
+                background: linear-gradient(135deg, #60a5fa, #3b82f6);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                font-size: 3em;
+                margin: 0;
+            '>🛒 Cart Abandonment Dashboard</h1>
+            <p style='color: #94a3b8; font-size: 1.1em; margin: 10px 0;'>
+                Comprehensive Analysis & Predictive Modeling
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("---")
 
         main_tabs = st.tabs([tab.name for tab in self.tabs])
+
+        BaseTab.ensure_data_directory()
 
         for tab, ui in zip(main_tabs, self.tabs):
             with tab:
                 ui.run()
+
+        add_footer()
 
 
 if __name__ == "__main__":
