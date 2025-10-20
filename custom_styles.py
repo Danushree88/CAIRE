@@ -1,380 +1,169 @@
+# custom_styles.py
 import streamlit as st
 
 def load_custom_css():
-    """Load comprehensive custom CSS for professional appearance"""
-    custom_css = """
+    """Load custom CSS styles for the dashboard"""
+    st.markdown("""
     <style>
-    /* Root variables */
-    :root {
-        --primary: #3b82f6;
-        --primary-dark: #1e40af;
-        --secondary: #8b5cf6;
-        --success: #10b981;
-        --danger: #ef4444;
-        --warning: #f59e0b;
-        --info: #0ea5e9;
-        --bg-primary: #0f172a;
-        --bg-secondary: #1e293b;
-        --bg-tertiary: #334155;
-        --text-primary: #e2e8f0;
-        --text-secondary: #cbd5e1;
-        --border: #475569;
-    }
-
-    /* Global styles */
-    body {
-        background-color: var(--bg-primary);
-        color: var(--text-primary);
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
+    /* Main styling */
     .main {
-        background-color: var(--bg-primary);
-        color: var(--text-primary);
+        background-color: #f8fafc;
     }
-
-    /* Headers */
-    h1, h2, h3, h4, h5, h6 {
-        color: var(--text-primary) !important;
-        font-weight: 600;
+    
+    /* Card styling */
+    .metric-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border-left: 4px solid #3B82F6;
+        margin-bottom: 1rem;
     }
-
-    h1 {
-        background: linear-gradient(135deg, #60a5fa, #3b82f6);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        font-size: 2.5em !important;
+    
+    /* Header styling */
+    .dashboard-header {
+        text-align: center;
+        padding: 2rem 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        color: white;
     }
-
-    h2 {
-        border-bottom: 2px solid var(--primary);
-        padding-bottom: 10px;
+    
+    /* Info boxes */
+    .info-box {
+        background: #dbeafe;
+        border-left: 4px solid #3B82F6;
+        padding: 1rem;
+        border-radius: 5px;
+        margin: 1rem 0;
     }
-
-    /* Metric containers */
-    [data-testid="metric-container"] {
-        background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%) !important;
-        border: 1px solid var(--border) !important;
-        border-radius: 12px !important;
-        padding: 20px !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    
+    .success-box {
+        background: #dcfce7;
+        border-left: 4px solid #22c55e;
+        padding: 1rem;
+        border-radius: 5px;
+        margin: 1rem 0;
     }
-
-    [data-testid="metric-container"]:hover {
-        border-color: var(--primary) !important;
-        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.15);
-        transform: translateY(-4px);
-        transition: all 0.3s ease;
+    
+    .warning-box {
+        background: #fef3c7;
+        border-left: 4px solid #f59e0b;
+        padding: 1rem;
+        border-radius: 5px;
+        margin: 1rem 0;
     }
-
-    /* Buttons */
-    .stButton > button, .stDownloadButton > button {
-        background: linear-gradient(135deg, var(--primary), var(--primary-dark)) !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 8px !important;
-        padding: 12px 24px !important;
-        font-weight: 600 !important;
-        transition: all 0.3s ease !important;
-        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+    
+    .error-box {
+        background: #fee2e2;
+        border-left: 4px solid #ef4444;
+        padding: 1rem;
+        border-radius: 5px;
+        margin: 1rem 0;
     }
-
-    .stButton > button:hover, .stDownloadButton > button:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5) !important;
+    
+    /* Section headers */
+    .section-header {
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 0.5rem;
+        margin: 2rem 0 1rem 0;
+        color: #1e293b;
     }
-
-    /* Tabs */
-    [data-baseweb="tab-list"] {
-        border-bottom: 2px solid var(--border);
-        gap: 0;
-    }
-
-    [data-baseweb="tab"] {
-        padding: 12px 24px !important;
-        border-radius: 8px 8px 0 0 !important;
-        color: var(--text-secondary) !important;
-        font-weight: 600 !important;
-        transition: all 0.3s ease;
-    }
-
-    [aria-selected="true"] [data-baseweb="tab"] {
-        background-color: var(--primary) !important;
-        color: white !important;
-        border-bottom: 3px solid var(--primary) !important;
-    }
-
-    [data-baseweb="tab"]:hover {
-        color: var(--text-primary) !important;
-    }
-
-    /* Input fields */
-    .stSelectbox, .stMultiSelect, .stTextInput, .stNumberInput, .stTextArea, .stSlider {
-        margin-bottom: 16px;
-    }
-
-    [data-baseweb="input"], [data-baseweb="select"] {
-        background-color: var(--bg-secondary) !important;
-        border: 1px solid var(--border) !important;
-        border-radius: 8px !important;
-        color: var(--text-primary) !important;
-    }
-
-    [data-baseweb="input"]:focus, [data-baseweb="select"]:focus {
-        border-color: var(--primary) !important;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
-    }
-
-    /* Checkbox and Radio */
-    [data-testid="stCheckbox"], [data-testid="stRadio"] {
-        padding: 10px 0;
-    }
-
-    /* Expander */
-    [data-testid="stExpander"] {
-        border: 1px solid var(--border) !important;
-        border-radius: 12px !important;
-        padding: 16px !important;
-        background-color: var(--bg-secondary) !important;
-    }
-
-    [data-testid="stExpander"] [data-testid="stExpanderToggleButton"] {
-        color: var(--primary) !important;
-    }
-
-    /* Alert messages */
-    [data-testid="stAlert"] {
-        border-radius: 8px !important;
-        padding: 16px !important;
-        border-left: 4px solid !important;
-    }
-
-    [data-testid="stInfoMessage"] {
-        background-color: rgba(14, 165, 233, 0.1) !important;
-        border-left-color: var(--info) !important;
-        color: var(--info) !important;
-    }
-
-    [data-testid="stSuccessMessage"] {
-        background-color: rgba(16, 185, 129, 0.1) !important;
-        border-left-color: var(--success) !important;
-        color: var(--success) !important;
-    }
-
-    [data-testid="stWarningMessage"] {
-        background-color: rgba(245, 158, 11, 0.1) !important;
-        border-left-color: var(--warning) !important;
-        color: var(--warning) !important;
-    }
-
-    [data-testid="stErrorMessage"] {
-        background-color: rgba(239, 68, 68, 0.1) !important;
-        border-left-color: var(--danger) !important;
-        color: var(--danger) !important;
-    }
-
-    /* Dataframe */
-    [data-testid="stDataFrame"] {
-        background-color: var(--bg-secondary) !important;
-        border-radius: 8px !important;
-        overflow: hidden;
-    }
-
-    /* Progress bar */
-    [data-testid="stProgress"] > div > div {
-        background: linear-gradient(90deg, var(--primary), var(--secondary)) !important;
-    }
-
-    /* Sidebar */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
-        border-right: 1px solid var(--border);
-    }
-
-    /* Divider */
-    hr {
-        border-color: var(--border) !important;
-    }
-
-    /* Scrollbar styling */
-    ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-        background: var(--bg-secondary);
-    }
-
-    ::-webkit-scrollbar-thumb {
-        background: var(--border);
-        border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-        background: var(--primary);
-    }
-
-    /* Links */
-    a {
-        color: var(--info) !important;
-        text-decoration: none;
-    }
-
-    a:hover {
-        text-decoration: underline;
-    }
-
-    /* Code blocks */
-    pre, code {
-        background-color: var(--bg-tertiary) !important;
-        color: #a5f3fc !important;
-        border-radius: 6px !important;
-        border: 1px solid var(--border) !important;
+    
+    /* Footer */
+    .footer {
+        text-align: center;
+        padding: 2rem;
+        color: #64748b;
+        margin-top: 3rem;
+        border-top: 1px solid #e2e8f0;
     }
     </style>
-    """
-    st.markdown(custom_css, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-
-def create_header(title: str, subtitle: str = "", icon: str = ""):
-    """Create a professional header section"""
+def create_header(title, subtitle, icon):
+    """Create a styled header"""
     st.markdown(f"""
-    <div style='text-align: center; margin-bottom: 30px; padding: 30px 0;'>
-        <h1 style='margin: 0; font-size: 2.8em;'>{icon} {title}</h1>
-        {f'<p style="color: #94a3b8; font-size: 1.1em; margin: 10px 0 0 0;">{subtitle}</p>' if subtitle else ''}
-        <hr style='border: none; border-top: 2px solid #334155; margin: 20px 0; opacity: 0.5;'>
+    <div class="dashboard-header">
+        <h1 style="margin: 0; font-size: 2.5em;">{icon} {title}</h1>
+        <p style="margin: 0.5em 0 0 0; font-size: 1.2em; opacity: 0.9;">{subtitle}</p>
     </div>
     """, unsafe_allow_html=True)
 
-
-def create_metric_row(metrics: dict):
-    """Create a professional metric row with multiple metrics
-    
-    Args:
-        metrics: dict with format {
-            'label': 'value',
-            'label2': 'value2'
-        }
-    """
-    cols = st.columns(len(metrics))
-    for col, (label, value) in zip(cols, metrics.items()):
-        with col:
-            st.metric(label, value)
-
-
-def create_section(title: str, icon: str = ""):
-    """Create a professional section divider"""
+def create_section(title, icon):
+    """Create a section header"""
     st.markdown(f"""
-    <div style='margin: 30px 0 20px 0;'>
-        <h2 style='
-            font-size: 1.5em;
-            color: #e2e8f0;
-            border-bottom: 2px solid #3b82f6;
-            padding-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        '>{icon} {title}</h2>
+    <div class="section-header">
+        <h2 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+            <span>{icon}</span>
+            <span>{title}</span>
+        </h2>
     </div>
     """, unsafe_allow_html=True)
 
-
-def info_box(message: str, icon: str = "ℹ️"):
-    """Create a professional info box"""
+def info_box(content):
+    """Create an info box"""
     st.markdown(f"""
-    <div style='
-        background-color: rgba(14, 165, 233, 0.1);
-        border-left: 4px solid #0ea5e9;
-        padding: 16px;
-        border-radius: 8px;
-        color: #0ea5e9;
-        margin: 16px 0;
-    '>{icon} {message}</div>
-    """, unsafe_allow_html=True)
-
-
-def success_box(message: str, icon: str = "✅"):
-    """Create a professional success box"""
-    st.markdown(f"""
-    <div style='
-        background-color: rgba(16, 185, 129, 0.1);
-        border-left: 4px solid #10b981;
-        padding: 16px;
-        border-radius: 8px;
-        color: #10b981;
-        margin: 16px 0;
-    '>{icon} {message}</div>
-    """, unsafe_allow_html=True)
-
-
-def warning_box(message: str, icon: str = "⚠️"):
-    """Create a professional warning box"""
-    st.markdown(f"""
-    <div style='
-        background-color: rgba(245, 158, 11, 0.1);
-        border-left: 4px solid #f59e0b;
-        padding: 16px;
-        border-radius: 8px;
-        color: #f59e0b;
-        margin: 16px 0;
-    '>{icon} {message}</div>
-    """, unsafe_allow_html=True)
-
-
-def error_box(message: str, icon: str = "❌"):
-    """Create a professional error box"""
-    st.markdown(f"""
-    <div style='
-        background-color: rgba(239, 68, 68, 0.1);
-        border-left: 4px solid #ef4444;
-        padding: 16px;
-        border-radius: 8px;
-        color: #ef4444;
-        margin: 16px 0;
-    '>{icon} {message}</div>
-    """, unsafe_allow_html=True)
-
-
-def create_stat_card(label: str, value: str, change: str = "", icon: str = "📊"):
-    """Create a professional stat card"""
-    color = "#10b981" if change.startswith("+") else "#ef4444" if change.startswith("-") else "#64748b"
-    st.markdown(f"""
-    <div style='
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        border: 1px solid #475569;
-        border-radius: 12px;
-        padding: 20px;
-        text-align: center;
-        transition: all 0.3s ease;
-    '>
-        <div style='font-size: 2em; margin-bottom: 10px;'>{icon}</div>
-        <div style='font-size: 0.9em; color: #94a3b8; margin-bottom: 8px;'>{label}</div>
-        <div style='font-size: 2em; font-weight: bold; color: #60a5fa; margin-bottom: 8px;'>{value}</div>
-        {f'<div style="font-size: 0.85em; color: {color};">{change}</div>' if change else ''}
+    <div class="info-box">
+        <strong>💡 Info:</strong> {content}
     </div>
     """, unsafe_allow_html=True)
 
+def success_box(content):
+    """Create a success box"""
+    st.markdown(f"""
+    <div class="success-box">
+        <strong>✅ Success:</strong> {content}
+    </div>
+    """, unsafe_allow_html=True)
 
-def create_comparison_table(df, highlight_max=True):
-    """Create a styled comparison table"""
-    if highlight_max:
-        st.dataframe(
-            df.style.highlight_max(axis=0, color='#3b82f6')
-                   .highlight_min(axis=0, color='#ef4444')
-                   .format(precision=3),
-            use_container_width=True
-        )
-    else:
-        st.dataframe(df, use_container_width=True)
+def warning_box(content):
+    """Create a warning box"""
+    st.markdown(f"""
+    <div class="warning-box">
+        <strong>⚠️ Warning:</strong> {content}
+    </div>
+    """, unsafe_allow_html=True)
 
+def error_box(content):
+    """Create an error box"""
+    st.markdown(f"""
+    <div class="error-box">
+        <strong>❌ Error:</strong> {content}
+    </div>
+    """, unsafe_allow_html=True)
+
+def create_stat_card(title, value, icon, color):
+    """Create a metric card"""
+    st.markdown(f"""
+    <div class="metric-card" style="border-left-color: {color};">
+        <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div>
+                <h3 style="margin: 0; color: #64748b; font-size: 0.9em; text-transform: uppercase;">
+                    {title}
+                </h3>
+                <h1 style="margin: 0.5em 0 0 0; color: #1e293b; font-size: 1.8em;">
+                    {value}
+                </h1>
+            </div>
+            <div style="font-size: 2em; color: {color};">
+                {icon}
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+def create_comparison_table(data):
+    """Create a comparison table"""
+    df = pd.DataFrame(data)
+    st.dataframe(df, use_container_width=True)
 
 def add_footer():
-    """Add a professional footer"""
+    """Add footer to the dashboard"""
     st.markdown("""
-    <hr style='border: none; border-top: 1px solid #334155; margin: 40px 0 20px 0;'>
-    <div style='text-align: center; color: #64748b; font-size: 0.9em; padding: 20px 0;'>
-        <p>🛒 Cart Abandonment Analytics Dashboard | © 2024 | Built with Streamlit</p>
+    <div class="footer">
+        <p>🎯 <strong>CAIRE System</strong> - Cart Abandonment Intelligence & Recovery Engine</p>
+        <p style="font-size: 0.9em;">© 2025 All rights reserved</p>
     </div>
     """, unsafe_allow_html=True)
