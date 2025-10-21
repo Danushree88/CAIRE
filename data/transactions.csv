@@ -1,0 +1,10 @@
+timestamp,session_id,user_id,product_id,product_name,category,event_type
+2025-10-21T09:26:33.130364,S1761018889,U1567,4,Skincare Kit,Beauty,add_to_cart
+2025-10-21T09:52:06.177776,S1761020515,U4062,4,Skincare Kit,Beauty,add_to_cart
+2025-10-21T09:52:25.614327,S1761020515,U4062,13,Jeans,Clothing,add_to_cart
+2025-10-21T09:52:49.837250,S1761020565,U8060,3,Cookware Set,Home & Kitchen,add_to_cart
+2025-10-21T09:52:55.394105,S1761020565,U8060,2,Car Accessories,Automotive,add_to_cart
+2025-10-21T09:55:25.036767,S1761020721,U7456,3,Cookware Set,Home & Kitchen,add_to_cart
+2025-10-21T09:55:28.076718,S1761020721,U7456,6,T-Shirt,Clothing,add_to_cart
+2025-10-21T09:55:38.688726,S1761020721,U7456,10,Laptop,Electronics,add_to_cart
+2025-10-21T09:55:52.872718,S1761020721,U7456,23,Sports Socks,Sports,add_to_cart

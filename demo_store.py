@@ -43,13 +43,13 @@ except FileNotFoundError:
     CATEGORY_MAP = {"Electronics": 0, "Clothing": 1, "Home & Kitchen": 2}
 
 FEATURE_ORDER = [
-    'return_user', 'day_of_week', 'time_of_day', 'session_duration', 'num_pages_viewed',
+    'session_id', 'user_id','return_user', 'day_of_week', 'time_of_day', 'session_duration', 'num_pages_viewed',
     'num_items_carted', 'has_viewed_shipping_info', 'scroll_depth', 'cart_value',
     'discount_applied', 'shipping_fee', 'free_shipping_eligible', 'device_type', 'browser',
     'referral_source', 'location', 'if_payment_page_reached', 'most_viewed_category',
     'engagement_intensity', 'scroll_engagement', 'is_weekend', 'has_multiple_items',
     'has_high_engagement', 'research_behavior', 'quick_browse', 'engagement_score',
-    'peak_hours', 'returning_peak', 'day_sin', 'day_cos', 'time_sin', 'time_cos', 'pca1', 'pca2'
+    'peak_hours', 'returning_peak', 'day_sin', 'day_cos', 'time_sin', 'time_cos', 'pca1', 'pca2','customer_segment'
 ]
 
 PRODUCTS = [
@@ -62,7 +62,27 @@ PRODUCTS = [
     {"id": 7, "name": "Action Figure", "price": 2400.99, "category": "Toys", "description": "Collectible action figure with accessories", "image": "https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=400&h=300&fit=crop"},
     {"id": 8, "name": "Running Shoes", "price": 7900.99, "category": "Sports", "description": "Professional running shoes with cushioning", "image": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=300&fit=crop"},
     {"id": 9, "name": "Organic Snacks", "price": 1400.99, "category": "Groceries", "description": "Healthy organic snack pack", "image": "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&h=300&fit=crop"},
-    {"id": 10, "name": "Laptop", "price": 89900.99, "category": "Electronics", "description": "High-performance laptop for professionals", "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=300&fit=crop"}
+    {"id": 10, "name": "Laptop", "price": 89900.99, "category": "Electronics", "description": "High-performance laptop for professionals", "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=300&fit=crop"},
+     {"id": 11, "name": "Wireless Earbuds", "price": 1999.99, "category": "Electronics", "description": "Noise cancellation wireless earbuds", "image": "https://images.unsplash.com/photo-1590658165737-15a047b8b5e2?w=400&h=300&fit=crop"},
+    {"id": 12, "name": "Phone Case", "price": 499.99, "category": "Electronics", "description": "Protective phone case", "image": "https://images.unsplash.com/photo-1556656793-08538906a9f8?w=400&h=300&fit=crop"},
+    {"id": 13, "name": "Jeans", "price": 1599.99, "category": "Clothing", "description": "Comfortable denim jeans", "image": "https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=300&fit=crop"},
+    {"id": 14, "name": "Coffee Maker", "price": 3499.99, "category": "Home & Kitchen", "description": "Automatic coffee brewing machine", "image": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=300&fit=crop"},
+    {"id": 15, "name": "Backpack", "price": 1299.99, "category": "Accessories", "description": "Waterproof laptop backpack", "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=300&fit=crop"},
+    {"id": 16, "name": "Fitness Tracker", "price": 2999.99, "category": "Electronics", "description": "Smart health monitoring band", "image": "https://images.unsplash.com/photo-1576243345690-4e4b79b63288?w=400&h=300&fit=crop"},
+    {"id": 17, "name": "Desk Lamp", "price": 899.99, "category": "Home & Kitchen", "description": "LED adjustable desk lamp", "image": "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=400&h=300&fit=crop"},
+    {"id": 18, "name": "Water Bottle", "price": 599.99, "category": "Sports", "description": "Insulated stainless steel bottle", "image": "https://images.unsplash.com/photo-1523362628745-0c100150b504?w=400&h=300&fit=crop"},
+    {"id": 19, "name": "Sunglasses", "price": 1299.99, "category": "Accessories", "description": "UV protection sunglasses", "image": "https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=400&h=300&fit=crop"},
+    {"id": 20, "name": "Bluetooth Speaker", "price": 2499.99, "category": "Electronics", "description": "Portable wireless speaker", "image": "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&h=300&fit=crop"},
+    {"id": 21, "name": "Screen Protector", "price": 299.99, "category": "Electronics", "description": "Tempered glass screen protection", "image": "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=400&h=300&fit=crop"},
+    {"id": 22, "name": "Wireless Mouse", "price": 799.99, "category": "Electronics", "description": "Ergonomic wireless computer mouse", "image": "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400&h=300&fit=crop"},
+    {"id": 23, "name": "Sports Socks", "price": 399.99, "category": "Sports", "description": "Moisture-wicking athletic socks", "image": "https://images.unsplash.com/photo-1544966503-7cc5ac882d5d?w=400&h=300&fit=crop"},
+    {"id": 24, "name": "Kitchen Utensils", "price": 1299.99, "category": "Home & Kitchen", "description": "12-piece stainless steel utensil set", "image": "https://images.unsplash.com/photo-1556909114-6c679fa076b4?w=400&h=300&fit=crop"},
+    {"id": 25, "name": "Face Mask", "price": 199.99, "category": "Beauty", "description": "Hydrating facial sheet masks", "image": "https://images.unsplash.com/photo-1556228578-7c79d0e69c15?w=400&h=300&fit=crop"},
+    {"id": 26, "name": "Coffee Beans", "price": 599.99, "category": "Groceries", "description": "Premium arabica coffee beans", "image": "https://images.unsplash.com/photo-1587734195503-904fca47e0e9?w=400&h=300&fit=crop"},
+    {"id": 27, "name": "Power Bank", "price": 1499.99, "category": "Electronics", "description": "10000mAh portable charger", "image": "https://images.unsplash.com/photo-1574944985071-1a1b42d160cf?w=400&h=300&fit=crop"},
+    {"id": 28, "name": "Sports Bag", "price": 1899.99, "category": "Sports", "description": "Multi-compartment gym duffle bag", "image": "https://images.unsplash.com/photo-1553062407-7db6c0a6bed6?w=400&h=300&fit=crop"},
+    {"id": 29, "name": "Watch", "price": 4599.99, "category": "Accessories", "description": "Classic analog wristwatch", "image": "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?w=400&h=300&fit=crop"},
+    {"id": 30, "name": "Laptop Sleeve", "price": 899.99, "category": "Accessories", "description": "Padded laptop protective case", "image": "https://images.unsplash.com/photo-1548611635-b6e3c9c5d92a?w=400&h=300&fit=crop"}
 ]
 
 # Valid promo codes with discount percentages
@@ -74,282 +94,61 @@ VALID_PROMO_CODES = {
 }
 
 # ============================================================================
-# INITIALIZATION
+# DIRECT RULE-BASED SEGMENTATION
 # ============================================================================
 
-if 'session_data' not in st.session_state:
-    st.session_state.session_data = {
-        'session_id': f"S{int(time.time())}",
-        'user_id': f"U{np.random.randint(1000, 9999)}",
-        'items': [],
-        'start_time': datetime.now(),
-        'events': [],
-        'cart_value': 0.0,
-        'pages_viewed': [],  # Changed to list to track order and count
-        'current_page': 'home',  # Track current page
-        'categories_viewed': set(),
-        'scroll_depth': 0.0,  # Real scroll depth percentage
-        'view_product_count': 0,
-        'shipping_viewed': False,
-        'payment_reached': False,
-        'return_user': np.random.choice([0, 1], p=[0.7, 0.3]),
-        'device_type': np.random.choice(list(DEVICE_TYPE_MAP.keys())),
-        'browser': np.random.choice(list(BROWSER_MAP.keys())),
-        'referral_source': np.random.choice(list(REFERRAL_SOURCE_MAP.keys())),
-        'location': np.random.choice(list(LOCATION_MAP.keys())),
-        'discount_applied': 0,
-        'discount_percentage': 0,
-        'discount_code': None,
-        'viewed_products': [],
-        'time_on_page': {}  # Track time spent on each page
-    }
-
-if 'all_sessions' not in st.session_state:
-    st.session_state.all_sessions = []
-
-if 'viewing_product' not in st.session_state:
-    st.session_state.viewing_product = None
-
-if 'promo_message' not in st.session_state:
-    st.session_state.promo_message = None
+class DirectRuleBasedSegmenter:  
+    def segment_single_customer(self, features):
+        try:
+            cart_value = features.get('cart_value', 0)
+            engagement_score = features.get('engagement_score', 0)
+            return_user = features.get('return_user', 0)
+            abandoned = features.get('abandoned', 0)
+            payment_reached = features.get('if_payment_page_reached', 0)
+            discount_applied = features.get('discount_applied', 0)
+            session_duration = features.get('session_duration', 0)
+            num_items_carted = features.get('num_items_carted', 0)
+            
+            print(f"🔍 Segmentation Input - Cart: ₹{cart_value}, Engagement: {engagement_score}, Return: {return_user}, Abandoned: {abandoned}, Payment: {payment_reached}")
+            
+            # Rule 1: High-Value Loyalists
+            if (return_user == 1 and 
+                cart_value > 20000 and 
+                engagement_score >= 6 and 
+                abandoned == 0):
+                return "High-Value Loyalists"
+            
+            # Rule 2: At-Risk Converters  
+            elif (abandoned == 1 and 
+                  cart_value > 20000 and 
+                  payment_reached == 0 and
+                  engagement_score >= 5):
+                return "At-Risk Converters"
+            
+            # Rule 3: Engaged Researchers
+            elif (engagement_score >= 7 and 
+                  session_duration >= 60 and 
+                  num_items_carted > 0 and
+                  abandoned == 1):
+                return "Engaged Researchers"
+            
+            # Rule 4: Price-Sensitive Shoppers
+            elif (discount_applied == 1 or 
+                  cart_value < 400 or
+                  (abandoned == 1 and cart_value < 450)):
+                return "Price-Sensitive Shoppers"
+            
+            # Rule 5: Casual Browsers (default)
+            else:
+                return "Casual Browsers"
+                
+        except Exception as e:
+            print(f"❌ Direct segmentation error: {e}")
+            return "Casual Browsers"
 
 # ============================================================================
-# HELPER FUNCTIONS
+# RECOVERY STRATEGY MANAGER
 # ============================================================================
-
-def get_time_of_day(hour):
-    """Convert hour to time category"""
-    if 5 <= hour < 12:
-        return "Morning"
-    elif 12 <= hour < 17:
-        return "Afternoon"
-    elif 17 <= hour < 22:
-        return "Evening"
-    else:
-        return "Night"
-
-def log_event(event_type, product_id=None, product_name=None, category=None, page_type=None):
-    """Log user interaction"""
-    event = {
-        'timestamp': datetime.now().isoformat(),
-        'event_type': event_type,
-        'product_id': product_id,
-        'product_name': product_name,
-        'category': category,
-        'page_type': page_type
-    }
-    st.session_state.session_data['events'].append(event)
-    
-    if page_type:
-        if page_type not in st.session_state.session_data['pages_viewed']:
-            st.session_state.session_data['pages_viewed'].append(page_type)
-    if category:
-        st.session_state.session_data['categories_viewed'].add(category)
-
-def navigate_page(page_name):
-    """Track page navigation"""
-    st.session_state.session_data['current_page'] = page_name
-    log_event('page_view', None, None, None, page_name)
-
-def add_to_cart(product):
-    """Add product to cart"""
-    st.session_state.session_data['items'].append(product)
-    st.session_state.session_data['cart_value'] += product['price']
-    log_event('add_to_cart', product['id'], product['name'], product['category'], 'product')
-
-def remove_from_cart(product_id):
-    """Remove product from cart by ID"""
-    for item in st.session_state.session_data['items']:
-        if item['id'] == product_id:
-            st.session_state.session_data['cart_value'] -= item['price']
-            st.session_state.session_data['items'].remove(item)
-            log_event('remove_from_cart', product_id, item['name'], item['category'], 'cart')
-            break
-
-def view_product(product):
-    """View product details"""
-    if product not in st.session_state.session_data['viewed_products']:
-        st.session_state.session_data['viewed_products'].append(product)
-    st.session_state.session_data['view_product_count'] += 1
-    log_event('view_product', product['id'], product['name'], product['category'], 'product_detail')
-
-def apply_promo_code(code):
-    """Validate and apply promo code"""
-    code = code.upper().strip()
-    if code in VALID_PROMO_CODES:
-        st.session_state.session_data['discount_applied'] = 1
-        st.session_state.session_data['discount_percentage'] = VALID_PROMO_CODES[code]
-        st.session_state.session_data['discount_code'] = code
-        log_event('promo_applied', None, None, None, 'checkout')
-        return True, VALID_PROMO_CODES[code]
-    return False, 0
-
-def update_scroll_depth(page_scroll_percent):
-    """Update realistic scroll depth based on actual page scrolling"""
-    st.session_state.session_data['scroll_depth'] = max(
-        st.session_state.session_data['scroll_depth'], 
-        page_scroll_percent
-    )
-    if page_scroll_percent > 0:
-        log_event('scroll', None, None, None, st.session_state.session_data['current_page'])
-
-def calculate_features(abandoned):
-    """Calculate all features for model input"""
-    current_time = datetime.now()
-    session_duration = (current_time - st.session_state.session_data['start_time']).total_seconds()
-    
-    # Get time info
-    day_name = current_time.strftime("%A")
-    hour = current_time.hour
-    time_of_day = get_time_of_day(hour)
-    
-    # Count interactions
-    add_events = len([e for e in st.session_state.session_data['events'] if e['event_type'] == 'add_to_cart'])
-    view_events = len([e for e in st.session_state.session_data['events'] if e['event_type'] == 'view_product'])
-    
-    # Basic metrics - REALISTIC VALUES
-    num_pages_viewed = len(st.session_state.session_data['pages_viewed'])  # Now accurate
-    num_items_carted = len(st.session_state.session_data['items'])
-    scroll_depth = st.session_state.session_data['scroll_depth']  # Real scroll depth
-    cart_value_scaled = st.session_state.session_data['cart_value']
-    shipping_fee = 0 if cart_value_scaled >= 200 else 99
-    free_shipping_eligible = 1 if cart_value_scaled >= 200 else 0
-
-    
-    # Most viewed category
-    if st.session_state.session_data['categories_viewed']:
-        category_counts = {}
-        for event in st.session_state.session_data['events']:
-            if event['category']:
-                category_counts[event['category']] = category_counts.get(event['category'], 0) + 1
-        most_viewed_category = max(category_counts, key=category_counts.get) if category_counts else "Electronics"
-    else:
-        most_viewed_category = "Electronics"
-    
-    # Engineered features
-    total_actions = len(st.session_state.session_data['events'])
-    engagement_intensity = total_actions / max(session_duration / 60, 1)
-    scroll_engagement = min(1.0, scroll_depth / 100.0)
-    
-    is_weekend = 1 if current_time.weekday() >= 5 else 0
-    has_multiple_items = 1 if len(st.session_state.session_data['items']) > 1 else 0
-    has_high_engagement = 1 if engagement_intensity > 1.5 else 0
-    research_behavior = 1 if (view_events > 3 and num_items_carted > 0) else 0
-    quick_browse = 1 if (session_duration < 120 and view_events <= 2) else 0
-    engagement_score = min(10, total_actions * 0.5 + scroll_depth * 0.05)
-    peak_hours = 1 if 9 <= hour <= 18 else 0
-    returning_peak = 1 if (st.session_state.session_data['return_user'] and peak_hours) else 0
-    
-    # Cyclical encoding
-    day_sin = math.sin(2 * math.pi * current_time.weekday() / 7)
-    day_cos = math.cos(2 * math.pi * current_time.weekday() / 7)
-    time_sin = math.sin(2 * math.pi * hour / 24)
-    time_cos = math.cos(2 * math.pi * hour / 24)
-    
-    # PCA components
-    pca1 = np.random.normal(0, 1)
-    pca2 = np.random.normal(0, 1)
-    
-    # Build features dictionary
-    features = {
-        'return_user': st.session_state.session_data['return_user'],
-        'day_of_week': DAY_OF_WEEK_MAP.get(day_name, 0),
-        'time_of_day': TIME_OF_DAY_MAP.get(time_of_day, 0),
-        'session_duration': max(60, min(5000, session_duration)),
-        'num_pages_viewed': num_pages_viewed,
-        'num_items_carted': num_items_carted,
-        'has_viewed_shipping_info': int(st.session_state.session_data['shipping_viewed']),
-        'scroll_depth': scroll_depth,
-        'cart_value': cart_value_scaled,
-        'discount_applied': st.session_state.session_data['discount_applied'],
-        'shipping_fee': shipping_fee,
-        'free_shipping_eligible': free_shipping_eligible,
-        'device_type': DEVICE_TYPE_MAP.get(st.session_state.session_data['device_type'], 0),
-        'browser': BROWSER_MAP.get(st.session_state.session_data['browser'], 0),
-        'referral_source': REFERRAL_SOURCE_MAP.get(st.session_state.session_data['referral_source'], 0),
-        'location': LOCATION_MAP.get(st.session_state.session_data['location'], 0),
-        'if_payment_page_reached': 1 if st.session_state.session_data['payment_reached'] else 0,
-        'most_viewed_category': CATEGORY_MAP.get(most_viewed_category, 0),
-        'engagement_intensity': engagement_intensity,
-        'scroll_engagement': scroll_engagement,
-        'is_weekend': is_weekend,
-        'has_multiple_items': has_multiple_items,
-        'has_high_engagement': has_high_engagement,
-        'research_behavior': research_behavior,
-        'quick_browse': quick_browse,
-        'engagement_score': engagement_score,
-        'peak_hours': peak_hours,
-        'returning_peak': returning_peak,
-        'day_sin': day_sin,
-        'day_cos': day_cos,
-        'time_sin': time_sin,
-        'time_cos': time_cos,
-        'pca1': pca1,
-        'pca2': pca2,
-        'abandoned': abandoned
-    }
-    
-    return features
-
-def save_session_data(abandoned):
-    """Save session to CSV"""
-    features = calculate_features(abandoned)
-    
-    ordered_features = {feature: features[feature] for feature in FEATURE_ORDER if feature in features}
-    ordered_features['abandoned'] = abandoned
-    
-    os.makedirs('test_data', exist_ok=True)
-    
-    df = pd.DataFrame([ordered_features])
-    csv_file = 'test_data/test_data_for_prediction.csv'
-    
-    if os.path.exists(csv_file):
-        existing_df = pd.read_csv(csv_file)
-        df = pd.concat([existing_df, df], ignore_index=True)
-    
-    df.to_csv(csv_file, index=False)
-    st.session_state.all_sessions.append(ordered_features)
-    
-    return csv_file
-
-def start_new_session():
-    """Start fresh session"""
-    st.session_state.session_data = {
-        'session_id': f"S{int(time.time())}",
-        'user_id': f"U{np.random.randint(1000, 9999)}",
-        'items': [],
-        'start_time': datetime.now(),
-        'events': [],
-        'cart_value': 0.0,
-        'pages_viewed': [],
-        'current_page': 'home',
-        'categories_viewed': set(),
-        'scroll_depth': 0.0,
-        'view_product_count': 0,
-        'shipping_viewed': False,
-        'payment_reached': False,
-        'return_user': np.random.choice([0, 1], p=[0.7, 0.3]),
-        'device_type': np.random.choice(list(DEVICE_TYPE_MAP.keys())),
-        'browser': np.random.choice(list(BROWSER_MAP.keys())),
-        'referral_source': np.random.choice(list(REFERRAL_SOURCE_MAP.keys())),
-        'location': np.random.choice(list(LOCATION_MAP.keys())),
-        'discount_applied': 0,
-        'discount_percentage': 0,
-        'discount_code': None,
-        'viewed_products': [],
-        'time_on_page': {}
-    }
-    st.session_state.viewing_product = None
-    st.session_state.promo_message = None
-
-
-# Add this after your existing imports
-import joblib
-import sys
-import os
-
-# Add the segmentation model path
-SEGMENTATION_MODEL_PATH = os.path.join(os.path.dirname(__file__), '..', 'models', 'enhanced_segmenter.pkl')
 
 class RecoveryStrategyManager:
     """Manages recovery strategies based on customer segments"""
@@ -359,8 +158,8 @@ class RecoveryStrategyManager:
             "High-Value Loyalists": {
                 "priority": "Low",
                 "strategies": [
-                    "🎯 Personalized thank you message with early access to new collections",
-                    "💎 VIP loyalty program with exclusive benefits",
+                    "💎 VIP early access to new products",
+                    "🎫 Double loyalty points campaign",
                     "📧 Regular updates about products matching their preferences",
                     "🎁 Surprise free shipping or small gifts on next purchase"
                 ],
@@ -371,7 +170,7 @@ class RecoveryStrategyManager:
                 "priority": "Very High",
                 "strategies": [
                     "🔥 Limited-time discount (10-15%) on abandoned items",
-                    "🚚 Free expedited shipping offer",
+                    "🚀 Personal executive email follow-up",
                     "📞 Personal shopping assistant offer",
                     "⏰ Stock availability alerts for items in cart"
                 ],
@@ -381,10 +180,10 @@ class RecoveryStrategyManager:
             "Engaged Researchers": {
                 "priority": "High", 
                 "strategies": [
-                    "📚 Product comparison guides or buying guides",
-                    "🎥 Video demonstrations of products they viewed",
-                    "💬 Live chat support invitation",
-                    "⭐ Customer reviews and testimonials highlight"
+                    "📚 Product expert consultation offer",
+                    "🎥 Detailed product demonstration videos",
+                    "💬 Live chat support promotion",
+                    "🔍 Advanced product comparison tools"
                 ],
                 "timing": "12-24 hours after visit",
                 "channel": "Email + Retargeting Ads"
@@ -435,282 +234,550 @@ class RecoveryStrategyManager:
             "user_context": user_data
         }
 
-# Initialize the recovery manager
+class AprioriRecommender:
+    def __init__(self):
+        self.rules = self._generate_sample_rules()
+        self.product_dict = {p['name']: p for p in PRODUCTS}  # Changed to name-based lookup
+    
+    def _generate_sample_rules(self):
+        return [
+            # Enhanced single product rules
+            ({"Smartphone"}, {"Phone Case", "Wireless Earbuds", "Screen Protector", "Power Bank"}, 0.75),
+            ({"Laptop"}, {"Backpack", "Wireless Mouse", "Laptop Sleeve", "Screen Protector"}, 0.65),
+            ({"Running Shoes"}, {"Fitness Tracker", "Sports Socks", "Water Bottle", "Sports Bag"}, 0.60),
+            ({"T-Shirt"}, {"Jeans", "Sunglasses", "Watch", "Sports Socks"}, 0.55),
+            ({"Cookware Set"}, {"Desk Lamp", "Kitchen Utensils", "Coffee Maker", "Coffee Beans"}, 0.45),
+            ({"Skincare Kit"}, {"Sunglasses", "Face Mask", "Watch", "Sports Socks"}, 0.50),
+            ({"Coffee Maker"}, {"Water Bottle", "Coffee Beans", "Desk Lamp", "Kitchen Utensils"}, 0.40),
+            ({"Backpack"}, {"Water Bottle", "Power Bank", "Laptop Sleeve", "Wireless Mouse"}, 0.35),
+            ({"Wireless Earbuds"}, {"Phone Case", "Power Bank", "Screen Protector", "Sports Bag"}, 0.55),
+            ({"Bluetooth Speaker"}, {"Power Bank", "Wireless Earbuds", "Phone Case", "Backpack"}, 0.48),
+            
+            # Multi-product rules
+            ({"Smartphone", "Laptop"}, {"Bluetooth Speaker", "Power Bank", "Wireless Mouse", "Backpack"}, 0.70),
+            ({"T-Shirt", "Jeans"}, {"Sunglasses", "Watch", "Sports Socks", "Backpack"}, 0.60),
+            ({"Running Shoes", "Fitness Tracker"}, {"Water Bottle", "Sports Bag", "Sports Socks", "Watch"}, 0.55),
+            ({"Coffee Maker", "Desk Lamp"}, {"Coffee Beans", "Water Bottle", "Kitchen Utensils", "Face Mask"}, 0.42)
+        ]
+    def get_recommendations(self, current_items, top_n=4):
+        """Get recommendations based on current cart items"""
+        recommendations = set()
+        current_item_names = {item['name'] for item in current_items}
+        
+        # Strategy 1: Exact rule matching
+        for antecedent, consequent, confidence in self.rules:
+            if antecedent.issubset(current_item_names):
+                recommendations.update(consequent - current_item_names)
+        
+        # Strategy 2: Category-based recommendations (fallback)
+        if not recommendations and current_items:
+            current_categories = {item['category'] for item in current_items}
+            category_products = [
+                p for p in PRODUCTS 
+                if p['category'] in current_categories 
+                and p['name'] not in current_item_names
+            ]
+            # Add 2 category-based recommendations
+            for product in category_products[:2]:
+                recommendations.add(product['name'])
+        
+        # Strategy 3: Popular products (final fallback)
+        if not recommendations:
+            popular_products = ["Phone Case", "Wireless Earbuds", "Backpack", "Water Bottle"]
+            for product_name in popular_products:
+                if product_name not in current_item_names:
+                    recommendations.add(product_name)
+                    if len(recommendations) >= top_n:
+                        break
+        
+        # Convert back to product objects
+        recommended_products = []
+        for product_name in list(recommendations)[:top_n]:
+            if product_name in self.product_dict:
+                recommended_products.append(self.product_dict[product_name])
+        
+        return recommended_products
+    
+    def get_frequently_bought_together(self, product, top_n=3):
+        """Special method for 'Frequently Bought Together' section"""
+        product_name = product['name']
+        recommendations = set()
+        
+        # Find rules where this product is in the antecedent
+        for antecedent, consequent, confidence in self.rules:
+            if product_name in antecedent:
+                # Get other products from this rule (excluding the current product)
+                other_products = consequent - {product_name}
+                recommendations.update(other_products)
+        
+        # If no specific rules found, use category-based fallback
+        if not recommendations:
+            same_category = [
+                p for p in PRODUCTS 
+                if p['category'] == product['category'] 
+                and p['name'] != product_name
+            ]
+            for p in same_category[:top_n]:
+                recommendations.add(p['name'])
+        
+        # Convert to product objects
+        result_products = []
+        for product_name in list(recommendations)[:top_n]:
+            if product_name in self.product_dict:
+                result_products.append(self.product_dict[product_name])
+        
+        return result_products
+    
+# ============================================================================
+# INITIALIZATION
+# ============================================================================
+
+if 'session_data' not in st.session_state:
+    st.session_state.session_data = {
+        'session_id': f"S{int(time.time())}",
+        'user_id': f"U{np.random.randint(1000, 9999)}",
+        'items': [],
+        'start_time': datetime.now(),
+        'events': [],
+        'cart_value': 0.0,
+        'pages_viewed': [],  # Changed to list to track order and count
+        'current_page': 'home',  # Track current page
+        'categories_viewed': set(),
+        'scroll_depth': 0.0,  # Real scroll depth percentage
+        'view_product_count': 0,
+        'shipping_viewed': False,
+        'payment_reached': False,
+        'return_user': np.random.choice([0, 1], p=[0.7, 0.3]),
+        'device_type': np.random.choice(list(DEVICE_TYPE_MAP.keys())),
+        'browser': np.random.choice(list(BROWSER_MAP.keys())),
+        'referral_source': np.random.choice(list(REFERRAL_SOURCE_MAP.keys())),
+        'location': np.random.choice(list(LOCATION_MAP.keys())),
+        'discount_applied': 0,
+        'discount_percentage': 0,
+        'discount_code': None,
+        'viewed_products': [],
+        'time_on_page': {}  # Track time spent on each page
+    }
+
+if 'all_sessions' not in st.session_state:
+    st.session_state.all_sessions = []
+
+if 'viewing_product' not in st.session_state:
+    st.session_state.viewing_product = None
+
+if 'promo_message' not in st.session_state:
+    st.session_state.promo_message = None
+
+if 'recommender' not in st.session_state:
+    st.session_state.recommender = AprioriRecommender()
+
+# Initialize direct segmenter and recovery manager
+st.session_state.segmenter = DirectRuleBasedSegmenter()
 recovery_manager = RecoveryStrategyManager()
 
-import sys
-import os
+# ============================================================================
+# HELPER FUNCTIONS
+# ============================================================================
 
-import sys
-import os
+def get_time_of_day(hour):
+    """Convert hour to time category"""
+    if 5 <= hour < 12:
+        return "Morning"
+    elif 12 <= hour < 17:
+        return "Afternoon"
+    elif 17 <= hour < 22:
+        return "Evening"
+    else:
+        return "Night"
 
-def load_or_train_segmenter():
-    """Load or train segmentation model - FIXED PATH"""
-    try:
-        # Get the current directory (where your Streamlit app is running)
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        print(f"📁 Current directory: {current_dir}")
-        
-        # Build path to segmentation module
-        segmentation_dir = os.path.join(current_dir, 'src', 'segmentation')
-        print(f"📁 Segmentation directory: {segmentation_dir}")
-        
-        # Check if the directory exists
-        if not os.path.exists(segmentation_dir):
-            print(f"❌ Segmentation directory not found: {segmentation_dir}")
-            return None
-            
-        # Add to Python path
-        if segmentation_dir not in sys.path:
-            sys.path.insert(0, segmentation_dir)
-            print(f"✅ Added to path: {segmentation_dir}")
-        
-        # Try to import
-        try:
-            from segment import EnhancedCustomerSegmenter
-            print("✅ Successfully imported EnhancedCustomerSegmenter")
-        except ImportError as e:
-            print(f"❌ Import failed: {e}")
-            return None
-        
-        # Load training data
-        data_path = os.path.join(current_dir, 'data', 'cart_abandonment_featured.csv')
-        print(f"📊 Data path: {data_path}")
-        
-        if os.path.exists(data_path):
-            df = pd.read_csv(data_path)
-            print(f"✅ Loaded training data: {df.shape}")
-            
-            segmenter = EnhancedCustomerSegmenter(n_segments=5)
-            segmenter.fit(df)
-            print("✅ Segmentation model trained successfully")
-            return segmenter
-        else:
-            print(f"❌ Training data not found at: {data_path}")
-            return None
-            
-    except Exception as e:
-        print(f"❌ Error in load_or_train_segmenter: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
+def log_event(event_type, product_id=None, product_name=None, category=None, page_type=None):
+    """Enhanced user interaction logging"""
+    event = {
+        'timestamp': datetime.now().isoformat(),
+        'event_type': event_type,
+        'product_id': product_id,
+        'product_name': product_name,
+        'category': category,
+        'page_type': page_type,
+        'session_id': st.session_state.session_data['session_id'],
+        'user_id': st.session_state.session_data['user_id']
+    }
+    st.session_state.session_data['events'].append(event)
 
-def debug_nan_features(features):
-    """Comprehensive NaN debugging"""
-    print("🔍 COMPREHENSIVE NaN DEBUG:")
-    nan_features = []
-    all_features_checked = []
+    if page_type:
+        st.session_state.session_data['pages_viewed'].append(page_type)  
     
-    for key, value in features.items():
-        is_nan = pd.isna(value) or value is None
-        status = "❌ NaN" if is_nan else "✅ OK"
-        all_features_checked.append(f"{key}: {value} ({status})")
-        
-        if is_nan:
-            nan_features.append(key)
-            print(f"   ❌ {key}: {value} (NaN/None)")
-    
-    print(f"📊 Total features: {len(features)}, NaN features: {len(nan_features)}")
-    if nan_features:
-        print(f"🚨 CRITICAL: Found NaN in: {nan_features}")
-    
-    return nan_features
+    if category:
+        st.session_state.session_data['categories_viewed'].add(category)
+    if event_type in ['add_to_cart', 'purchase'] and product_id:
+        log_transaction_for_apriori(product_id, product_name, category, event_type)
 
-def aggressive_feature_cleaning(features):
-    """Aggressive cleaning to eliminate ALL NaN values"""
-    cleaned = features.copy()
-    
-    # Define safe defaults for EVERY feature
-    safe_defaults = {
-        # Binary features
-        'return_user': 0, 'discount_applied': 0, 'has_viewed_shipping_info': 0,
-        'if_payment_page_reached': 0, 'free_shipping_eligible': 0, 'is_weekend': 0,
-        'has_multiple_items': 0, 'has_high_engagement': 0, 'research_behavior': 0,
-        'quick_browse': 0, 'peak_hours': 0, 'returning_peak': 0,
-        
-        # Count features
-        'num_pages_viewed': 1, 'num_items_carted': 0,
-        
-        # Continuous features
-        'session_duration': 120.0, 'scroll_depth': 25.0, 'cart_value': 50.0,
-        'shipping_fee': 99.0, 'engagement_intensity': 0.5, 'scroll_engagement': 0.25,
-        'engagement_score': 5.0, 'day_sin': 0.0, 'day_cos': 1.0, 'time_sin': 0.0,
-        'time_cos': 1.0, 'pca1': 0.0, 'pca2': 0.0,
-        
-        # Encoded categorical features
-        'day_of_week': 0, 'time_of_day': 0, 'device_type': 0, 'browser': 0,
-        'referral_source': 0, 'location': 0, 'most_viewed_category': 0
+def log_transaction_for_apriori(product_id, product_name, category, event_type):
+    """Log transactions for Apriori association rule mining"""
+    transaction = {
+        'timestamp': datetime.now().isoformat(),
+        'session_id': st.session_state.session_data['session_id'],
+        'user_id': st.session_state.session_data['user_id'],
+        'product_id': product_id,
+        'product_name': product_name,
+        'category': category,
+        'event_type': event_type
     }
     
-    # Apply defaults to ALL features to ensure no NaN
-    for feature in cleaned.keys():
-        if pd.isna(cleaned[feature]) or cleaned[feature] is None:
-            default_val = safe_defaults.get(feature, 0)
-            print(f"🔄 Replacing NaN in {feature} with {default_val}")
-            cleaned[feature] = default_val
+    # Save to transactions file
+    os.makedirs('data', exist_ok=True)
+    transactions_file = 'data/transactions.csv'
     
-    return cleaned
+    df = pd.DataFrame([transaction])
+    if os.path.exists(transactions_file):
+        df.to_csv(transactions_file, mode='a', header=False, index=False)
+    else:
+        df.to_csv(transactions_file, index=False)
+
+def navigate_page(page_name):
+    """Track page navigation"""
+    st.session_state.session_data['current_page'] = page_name
+    log_event('page_view', None, None, None, page_name)
+
+def add_to_cart(product):
+    """Add product to cart"""
+    st.session_state.session_data['items'].append(product)
+    st.session_state.session_data['cart_value'] += product['price']
+    log_event('add_to_cart', product['id'], product['name'], product['category'], 'product')
+
+def remove_from_cart(product_id):
+    """Remove product from cart by ID"""
+    for item in st.session_state.session_data['items']:
+        if item['id'] == product_id:
+            st.session_state.session_data['cart_value'] -= item['price']
+            st.session_state.session_data['items'].remove(item)
+            log_event('remove_from_cart', product_id, item['name'], item['category'], 'cart')
+            break
+
+def view_product(product):
+    """View product details"""
+    if product not in st.session_state.session_data['viewed_products']:
+        st.session_state.session_data['viewed_products'].append(product)
+    st.session_state.session_data['view_product_count'] += 1
+    log_event('view_product', product['id'], product['name'], product['category'], 'product_detail')
+
+def apply_promo_code(code):
+    """Validate and apply promo code"""
+    code = code.upper().strip()
+    if code in VALID_PROMO_CODES:
+        st.session_state.session_data['discount_applied'] = 1
+        st.session_state.session_data['discount_percentage'] = VALID_PROMO_CODES[code]
+        st.session_state.session_data['discount_code'] = code
+        log_event('promo_applied', None, None, None, 'checkout')
+        return True, VALID_PROMO_CODES[code]
+    return False, 0
+
+def update_scroll_depth(page_scroll_percent):
+    """Update realistic scroll depth based on actual page scrolling"""
+    st.session_state.session_data['scroll_depth'] = max(
+        st.session_state.session_data['scroll_depth'], 
+        page_scroll_percent
+    )
+    if page_scroll_percent > 0:
+        log_event('scroll', None, None, None, st.session_state.session_data['current_page'])
+
+def calculate_realistic_engagement_score(session_data):
+    """Calculate realistic engagement score (0-10 scale)"""
+    
+    # Extract metrics
+    total_actions = len(session_data['events'])
+    session_duration = (datetime.now() - session_data['start_time']).total_seconds()
+    pages_viewed = len(session_data['pages_viewed'])
+    products_viewed = session_data['view_product_count']
+    items_carted = len(session_data['items'])
+    scroll_depth = session_data['scroll_depth']
+    
+    # Weighted scoring system
+    scores = {
+        'action_density': min(2.0, total_actions / max(session_duration / 60, 1)),  # Actions per minute (0-2)
+        'page_exploration': min(2.0, pages_viewed * 0.4),  # 0.4 points per page (0-2)
+        'product_interest': min(2.0, products_viewed * 0.3),  # 0.3 points per product view (0-2)
+        'purchase_intent': min(2.0, items_carted * 0.5),  # 0.5 points per cart item (0-2)
+        'content_engagement': min(2.0, scroll_depth / 50)  # 0.02 points per % scroll (0-2)
+    }
+    
+    # Calculate total score (0-10)
+    total_score = sum(scores.values())
+    
+    # Apply bonus for specific behaviors
+    bonuses = 0
+    if session_data.get('shipping_viewed', False):
+        bonuses += 0.5
+    if session_data.get('payment_reached', False):
+        bonuses += 1.0
+    if session_data['return_user'] == 1:
+        bonuses += 0.5
+    
+    final_score = min(10.0, total_score + bonuses)
+    
+    return final_score
+
+
+def calculate_features(abandoned):
+    """Calculate all features for model input"""
+    current_time = datetime.now()
+    session_duration = (current_time - st.session_state.session_data['start_time']).total_seconds()
+    
+    # Generate session and user IDs if not exists
+    if 'session_id' not in st.session_state.session_data:
+        st.session_state.session_data['session_id'] = f"S{len(st.session_state.all_sessions) + 1000}"
+    
+    if 'user_id' not in st.session_state.session_data:
+        st.session_state.session_data['user_id'] = f"U{np.random.randint(1, 500)}"
+    
+    # Get time info
+    day_name = current_time.strftime("%A")
+    hour = current_time.hour
+    time_of_day = get_time_of_day(hour)
+    
+    # Count interactions
+    add_events = len([e for e in st.session_state.session_data['events'] if e['event_type'] == 'add_to_cart'])
+    view_events = len([e for e in st.session_state.session_data['events'] if e['event_type'] == 'view_product'])
+    
+    # Basic metrics - REALISTIC VALUES
+    num_pages_viewed = len(st.session_state.session_data['pages_viewed'])
+    num_items_carted = len(st.session_state.session_data['items'])
+    scroll_depth = st.session_state.session_data['scroll_depth']
+    cart_value_scaled = st.session_state.session_data['cart_value']
+    shipping_fee = 0 if cart_value_scaled >= 200 else 99
+    free_shipping_eligible = 1 if cart_value_scaled >= 200 else 0
+
+    # Most viewed category
+    if st.session_state.session_data['categories_viewed']:
+        category_counts = {}
+        for event in st.session_state.session_data['events']:
+            if event['category']:
+                category_counts[event['category']] = category_counts.get(event['category'], 0) + 1
+        most_viewed_category = max(category_counts, key=category_counts.get) if category_counts else "Electronics"
+    else:
+        most_viewed_category = "Electronics"
+    
+    # Engineered features
+    total_actions = len(st.session_state.session_data['events'])
+    engagement_intensity = total_actions / max(session_duration / 60, 1)
+    scroll_engagement = min(1.0, scroll_depth / 100.0)
+    
+    is_weekend = 1 if current_time.weekday() >= 5 else 0
+    has_multiple_items = 1 if len(st.session_state.session_data['items']) > 1 else 0
+    has_high_engagement = 1 if engagement_intensity > 1.5 else 0
+    research_behavior = 1 if (view_events > 3 and num_items_carted > 0) else 0
+    quick_browse = 1 if (session_duration < 120 and view_events <= 2) else 0
+    
+    # Use realistic engagement score
+    engagement_score = calculate_realistic_engagement_score(st.session_state.session_data)
+    
+    peak_hours = 1 if 9 <= hour <= 18 else 0
+    returning_peak = 1 if (st.session_state.session_data['return_user'] and peak_hours) else 0
+    
+    # Cyclical encoding
+    day_sin = math.sin(2 * math.pi * current_time.weekday() / 7)
+    day_cos = math.cos(2 * math.pi * current_time.weekday() / 7)
+    time_sin = math.sin(2 * math.pi * hour / 24)
+    time_cos = math.cos(2 * math.pi * hour / 24)
+    
+    # PCA components
+    pca1 = np.random.normal(0, 1)
+    pca2 = np.random.normal(0, 1)
+    
+    features = {
+        'session_id': st.session_state.session_data['session_id'],
+        'user_id': st.session_state.session_data['user_id'],
+        'return_user': st.session_state.session_data['return_user'],
+        'day_of_week': DAY_OF_WEEK_MAP.get(day_name, 0),
+        'time_of_day': TIME_OF_DAY_MAP.get(time_of_day, 0),
+        'session_duration': max(60, min(5000, session_duration)),
+        'num_pages_viewed': num_pages_viewed,
+        'num_items_carted': num_items_carted,
+        'has_viewed_shipping_info': int(st.session_state.session_data['shipping_viewed']),
+        'scroll_depth': scroll_depth,
+        'cart_value': cart_value_scaled,
+        'discount_applied': st.session_state.session_data['discount_applied'],
+        'shipping_fee': shipping_fee,
+        'free_shipping_eligible': free_shipping_eligible,
+        'device_type': DEVICE_TYPE_MAP.get(st.session_state.session_data['device_type'], 0),
+        'browser': BROWSER_MAP.get(st.session_state.session_data['browser'], 0),
+        'referral_source': REFERRAL_SOURCE_MAP.get(st.session_state.session_data['referral_source'], 0),
+        'location': LOCATION_MAP.get(st.session_state.session_data['location'], 0),
+        'if_payment_page_reached': 1 if st.session_state.session_data['payment_reached'] else 0,
+        'most_viewed_category': CATEGORY_MAP.get(most_viewed_category, 0),
+        'engagement_intensity': engagement_intensity,
+        'scroll_engagement': scroll_engagement,
+        'is_weekend': is_weekend,
+        'has_multiple_items': has_multiple_items,
+        'has_high_engagement': has_high_engagement,
+        'research_behavior': research_behavior,
+        'quick_browse': quick_browse,
+        'engagement_score': engagement_score,
+        'peak_hours': peak_hours,
+        'returning_peak': returning_peak,
+        'day_sin': day_sin,
+        'day_cos': day_cos,
+        'time_sin': time_sin,
+        'time_cos': time_cos,
+        'pca1': pca1,
+        'pca2': pca2,
+        'abandoned': abandoned
+    }
+    
+    return features
+
+def save_session_data(abandoned, segment=None):
+    features = calculate_features(abandoned)
+    ordered_features = {}
+    ordered_features['session_id'] = features['session_id']
+    ordered_features['user_id'] = features['user_id']
+
+    for feature in FEATURE_ORDER:
+        if feature in features and feature not in ['session_id', 'user_id']:
+            ordered_features[feature] = features[feature]   
+
+    ordered_features['abandoned'] = abandoned
+    ordered_features['customer_segment'] = segment if segment else "Unknown"
+    
+    os.makedirs('test_data', exist_ok=True)  
+    df = pd.DataFrame([ordered_features])
+    csv_file = 'test_data/test_data_for_prediction.csv'   
+    if os.path.exists(csv_file):
+        existing_df = pd.read_csv(csv_file)
+        df = pd.concat([existing_df, df], ignore_index=True)   
+    df.to_csv(csv_file, index=False)
+    st.session_state.all_sessions.append(ordered_features)  
+    return csv_file
+
+def start_new_session():
+    """Start fresh session"""
+    st.session_state.session_data = {
+        'session_id': f"S{int(time.time())}",
+        'user_id': f"U{np.random.randint(1000, 9999)}",
+        'items': [],
+        'start_time': datetime.now(),
+        'events': [],
+        'cart_value': 0.0,
+        'pages_viewed': [],
+        'current_page': 'home',
+        'categories_viewed': set(),
+        'scroll_depth': 0.0,
+        'view_product_count': 0,
+        'shipping_viewed': False,
+        'payment_reached': False,
+        'return_user': np.random.choice([0, 1], p=[0.7, 0.3]),
+        'device_type': np.random.choice(list(DEVICE_TYPE_MAP.keys())),
+        'browser': np.random.choice(list(BROWSER_MAP.keys())),
+        'referral_source': np.random.choice(list(REFERRAL_SOURCE_MAP.keys())),
+        'location': np.random.choice(list(LOCATION_MAP.keys())),
+        'discount_applied': 0,
+        'discount_percentage': 0,
+        'discount_code': None,
+        'viewed_products': [],
+        'time_on_page': {}
+    }
+    st.session_state.viewing_product = None
+    st.session_state.promo_message = None
+    st.session_state.current_segment = None
+    st.session_state.current_recovery_strategy = None
+    st.session_state.show_new_session_btn = False 
 
 def predict_customer_segment(features):
-    """Predict segment with GUARANTEED no NaN values"""
+    """Predict segment using direct rule-based segmentation"""
     try:
-        print("🎯 Starting segmentation prediction...")
-        
-        # Step 1: Debug NaN features
-        nan_features = debug_nan_features(features)
-        
-        # Step 2: Aggressive cleaning
-        cleaned_features = aggressive_feature_cleaning(features)
-        
-        # Step 3: Convert to DataFrame with additional safety
-        features_df = pd.DataFrame([cleaned_features])
-        
-        # Step 4: Final nuclear option - fill ALL remaining NaN
-        nan_before = features_df.isna().sum().sum()
-        if nan_before > 0:
-            print(f"⚠️ Nuclear cleanup: Found {nan_before} NaN, filling ALL with 0")
-            features_df = features_df.fillna(0)
-        
-        nan_after = features_df.isna().sum().sum()
-        print(f"📊 Final NaN check - Before: {nan_before}, After: {nan_after}")
-        
-        if nan_after > 0:
-            print("❌ CRITICAL: Still have NaN after cleaning - using fallback")
-            return simple_segment_fallback(features)
-        
-        print(f"✅ Features clean: {features_df.shape}, No NaN values")
-        
-        # Step 5: Load segmenter
-        segmenter = load_or_train_segmenter()
-        
-        if segmenter is None:
-            print("⚠️ Segmenter failed, using fallback")
-            return simple_segment_fallback(features)
-        
-        print("✅ Segmenter loaded successfully")
-        
-        # Step 6: Predict
-        segment_label = segmenter.predict_segment(features_df)[0]
-        print(f"📊 Raw segment label: {segment_label}")
-        
-        # Step 7: Get segment name
-        if (hasattr(segmenter, 'segment_profiles') and 
-            segmenter.segment_profiles and 
-            segment_label in segmenter.segment_profiles):
-            segment_name = segmenter.segment_profiles[segment_label]['segment_name']
-            print(f"🎯 SUCCESS: Predicted segment: {segment_name}")
-            return segment_name
-        
-        # Fallback mapping
-        segment_names = {
-            0: "High-Value Loyalists", 1: "At-Risk Converters", 
-            2: "Engaged Researchers", 3: "Price-Sensitive Shoppers", 
-            4: "Casual Browsers"
-        }
-        segment_name = segment_names.get(segment_label, "Casual Browsers")
-        print(f"🎯 Fallback mapping: {segment_name}")
-        return segment_name
+        print("🎯 Starting direct rule-based segmentation...")
+        segment = st.session_state.segmenter.segment_single_customer(features)
+        print(f"✅ Direct rule-based segment: {segment}")
+        return segment
         
     except Exception as e:
-        print(f"❌ Segmentation crashed: {e}")
-        return simple_segment_fallback(features)
-
-def simple_segment_fallback(features):
-    """Simple fallback when model fails"""
-    print("🔄 Using simple segment fallback")
-    try:
-        cart_value = features.get('cart_value', 0)
-        return_user = features.get('return_user', 0)
-        engagement = features.get('engagement_score', 0)
-        pages_viewed = features.get('num_pages_viewed', 0)
-        discount_applied = features.get('discount_applied', 0)
-        payment_reached = features.get('if_payment_page_reached', 0)
-        
-        print(f"📊 Fallback analysis - Cart: {cart_value}, Return: {return_user}, Engagement: {engagement}")
-        
-        # Your actual segmentation logic
-        if return_user and cart_value > 100 and engagement > 7:
-            return "High-Value Loyalists"
-        elif not return_user and cart_value > 100:
-            return "At-Risk Converters"
-        elif engagement > 7 and pages_viewed > 3:
-            return "Engaged Researchers"
-        elif discount_applied:
-            return "Price-Sensitive Shoppers"
-        else:
-            return "Casual Browsers"
-    except Exception as e:
-        print(f"❌ Fallback error: {e}")
+        print(f"❌ Direct segmentation error: {e}")
         return "Casual Browsers"
 
-def trigger_recovery_strategy(session_data, abandonment_reason="cart_abandonment"):
+def trigger_segmentation_and_recovery(session_data, abandoned_status):
     """
-    Trigger appropriate recovery strategy based on user segment
+    Trigger segmentation and recovery strategy based on user behavior
+    Always runs - for both abandoned and purchased sessions
     """
     try:
-        # Calculate features for segmentation
-        features = calculate_features(abandoned=1)  # Using your existing function
+        # Calculate features
+        features = calculate_features(abandoned=abandoned_status)
         
-        # Predict segment
+        # Predict segment using direct rule-based logic
         segment = predict_customer_segment(features)
         
-        # Get recovery strategy
+        # Get recovery/engagement strategy
         user_context = {
             "cart_value": session_data['cart_value'],
             "items_count": len(session_data['items']),
             "products_viewed": len(session_data['viewed_products']),
             "session_duration": (datetime.now() - session_data['start_time']).total_seconds(),
-            "abandonment_reason": abandonment_reason
+            "abandoned": abandoned_status
         }
         
         strategy = recovery_manager.get_recovery_strategy(segment, user_context)
         
-        # Log the recovery trigger
-        log_event('recovery_triggered', None, None, None, 'system')
+        # Log the segmentation
+        log_event('customer_segmented', None, None, None, 'system')
         
-        return strategy
+        return segment, strategy
         
     except Exception as e:
-        print(f"Recovery strategy error: {e}")
+        print(f"Segmentation error: {e}")
+        return "Casual Browsers", recovery_manager.get_recovery_strategy("Casual Browsers")
+
 def handle_session_end(action_type):
-    """Handle session end with recovery strategy - FIXED"""
+    """Handle session end with segmentation and recovery strategy"""
     if len(st.session_state.session_data['items']) > 0:
         if action_type == "abandon":
-            # Calculate features WITH abandoned=1 (like your training data)
-            features = calculate_features(abandoned=1)  # THIS IS CRITICAL
-            
-            # Then predict segment
-            recovery_strategy = trigger_recovery_strategy(
+            # Mark as abandoned and get segmentation
+            st.session_state.session_data['payment_reached'] = False
+            segment, strategy = trigger_segmentation_and_recovery(
                 st.session_state.session_data, 
-                "cart_abandonment"
+                abandoned_status=1
             )
             
-            # Save as abandoned
-            csv_file = save_session_data(abandoned=1)
+            # Save as abandoned WITH SEGMENT
+            csv_file = save_session_data(abandoned=1, segment=segment)
             st.success("📊 Cart abandoned - saved!")
             
-            # Store the strategy
-            st.session_state.current_recovery_strategy = recovery_strategy
+            # Store the segment and strategy
+            st.session_state.current_segment = segment
+            st.session_state.current_recovery_strategy = strategy
+            st.session_state.show_new_session_btn = True
             
         elif action_type == "purchase":
-            # For purchase, use abandoned=0
-            features = calculate_features(abandoned=0)
+            # Mark as purchased and STILL get segmentation
             st.session_state.session_data['payment_reached'] = True
-            csv_file = save_session_data(abandoned=0)
+            segment, strategy = trigger_segmentation_and_recovery(
+                st.session_state.session_data,
+                abandoned_status=0
+            )
+            
+            # Save as purchased WITH SEGMENT
+            csv_file = save_session_data(abandoned=0, segment=segment)
             st.success("🎉 Purchase complete - saved!")
-            st.session_state.current_recovery_strategy = None
+            
+            # Store the segment and strategy (even for purchases)
+            st.session_state.current_segment = segment
+            st.session_state.current_recovery_strategy = strategy
+            st.session_state.show_new_session_btn = True
+    else:
+        st.warning("❌ Add items to cart first!")
 
-def display_recovery_ui(strategy=None):
-    """Display recovery strategy in the UI - PERSISTENT"""
-    # Use strategy from parameter or from session state
+def display_segmentation_ui(segment=None, strategy=None):
+    """Display segmentation and strategy in the UI - PERSISTENT"""
+    # Use from parameter or from session state
+    if segment is None:
+        segment = st.session_state.get('current_segment')
     if strategy is None:
         strategy = st.session_state.get('current_recovery_strategy')
     
-    if not strategy:
+    if not segment or not strategy:
         return
     
     st.sidebar.divider()
-    st.sidebar.header("🎯 Recovery Strategy")
+    st.sidebar.header("🎯 Customer Segmentation")
     
     # Color code based on priority
     priority_colors = {
@@ -724,7 +791,7 @@ def display_recovery_ui(strategy=None):
     
     st.sidebar.markdown(f"""
     <div style="padding: 15px; border-radius: 8px; border-left: 5px solid {color}; background-color: #f8f9fa; margin: 10px 0;">
-        <h4 style="margin: 0 0 8px 0; color: {color};">{strategy['segment']}</h4>
+        <h4 style="margin: 0 0 8px 0; color: {color};">{segment}</h4>
         <p style="margin: 4px 0; font-size: 0.9em;"><strong>Priority:</strong> {strategy['priority']}</p>
         <p style="margin: 4px 0; font-size: 0.85em;"><strong>Timing:</strong> {strategy['timing']}</p>
         <p style="margin: 4px 0; font-size: 0.85em;"><strong>Channel:</strong> {strategy['channel']}</p>
@@ -734,114 +801,19 @@ def display_recovery_ui(strategy=None):
     st.sidebar.write("**Recommended Actions:**")
     for i, action in enumerate(strategy["strategies"][:3]):
         st.sidebar.markdown(f"<div style='margin: 8px 0; padding-left: 10px; border-left: 2px solid {color};'>{action}</div>", unsafe_allow_html=True)
-    
-    # Add a note about continuing
-    st.sidebar.info("💡 Click '🔄 Start New Session' to continue testing")
-
-
-def modified_abandon_cart_flow():
-    """Enhanced abandon cart flow with recovery strategies"""
-    
-    st.sidebar.divider()
-    st.sidebar.header("🏁 End Session")
-    
-    if st.sidebar.button("🔄 New Session", width='stretch', type="secondary"):
-        start_new_session()
-        st.rerun()
-    
-    col1, col2 = st.sidebar.columns(2)
-    
-    with col1:
-        if st.sidebar.button("🚪 Abandon", width='stretch'):
-            if len(st.session_state.session_data['items']) > 0:
-                # Trigger recovery strategy before saving
-                recovery_strategy = trigger_recovery_strategy(
-                    st.session_state.session_data, 
-                    "cart_abandonment"
-                )
-                
-                # Save session data
-                csv_file = save_session_data(abandoned=1)
-                
-                # Show recovery insights
-                st.sidebar.success("📊 Cart abandoned - saved!")
-                
-                # Display recovery strategy
-                if recovery_strategy:
-                    display_recovery_ui(recovery_strategy)
-                
-                st.balloons()
-                time.sleep(3)
-                start_new_session()
-                st.rerun()
-            else:
-                st.sidebar.warning("❌ Add items to cart first!")
-    
-    with col2:
-        if st.sidebar.button("💰 Purchase", type="primary", width='stretch'):
-            if len(st.session_state.session_data['items']) > 0:
-                st.session_state.session_data['payment_reached'] = True
-                csv_file = save_session_data(abandoned=0)
-                st.sidebar.success("🎉 Purchase complete - saved!")
-                st.balloons()
-                time.sleep(2)
-                start_new_session()
-                st.rerun()
-            else:
-                st.sidebar.warning("❌ Add items to cart first!")
-
-# Add real-time segment insights in the main area
-def display_segment_insights():
-    """Display real-time segment insights based on current behavior"""
-    
-    if len(st.session_state.session_data['items']) > 0:
-        features = calculate_features(abandoned=0)
-        segment = predict_customer_segment(features)
-        
-        # Show segment insights in main area
-        st.divider()
-        st.subheader("🎯 Real-time Customer Insights")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.metric("Predicted Segment", segment)
-        
-        with col2:
-            cart_value = st.session_state.session_data['cart_value']
-            if cart_value > 100:
-                st.metric("Value Tier", "High")
-            elif cart_value > 50:
-                st.metric("Value Tier", "Medium") 
-            else:
-                st.metric("Value Tier", "Low")
-        
-        with col3:
-            engagement = features.get('engagement_score', 0)
-            if engagement > 7:
-                st.metric("Engagement", "High")
-            elif engagement > 4:
-                st.metric("Engagement", "Medium")
-            else:
-                st.metric("Engagement", "Low")
-        
-        # Show proactive recovery suggestions
-        if segment == "At-Risk Converters":
-            st.info("💡 **Proactive Tip:** Consider applying a promo code to encourage conversion!")
-        elif segment == "Engaged Researchers":
-            st.info("💡 **Proactive Tip:** View shipping info to help with purchase decision!")
-        elif segment == "Price-Sensitive Shoppers":
-            st.info("💡 **Proactive Tip:** Check available discounts for better value!")
-
 
 # ============================================================================
 # MAIN APP
 # ============================================================================
+
 def main():
     st.title("🛒 ShopEasy - Test Data Store")
     st.markdown("### Realistic shopping simulation with auto-saved features")
     
-    # Your existing sidebar session info code remains the same
+    # Show segmentation status
+    st.success("✅ Direct rule-based segmentation loaded")
+    
+    # Sidebar session info
     with st.sidebar:
         st.header("👤 Session Info")
         st.write(f"**Session:** `{st.session_state.session_data['session_id']}`")
@@ -873,6 +845,7 @@ def main():
         if st.button("🔄 New Session", width='stretch', type="secondary"):
             start_new_session()
             st.session_state.show_new_session_btn = False
+            st.session_state.current_segment = None
             st.session_state.current_recovery_strategy = None
             st.rerun()
 
@@ -891,14 +864,13 @@ def main():
             if st.button("🔄 Start New Session", width='stretch', type="primary"):
                 start_new_session()
                 st.session_state.show_new_session_btn = False
+                st.session_state.current_segment = None
                 st.session_state.current_recovery_strategy = None
                 st.rerun()
 
-# Display recovery strategy ONLY ONCE - remove the duplicate call below this
-
-        # Always display recovery strategy if it exists (PERSISTENT)
-        if st.session_state.get('current_recovery_strategy'):
-            display_recovery_ui()  # This will use the strategy from session state
+        # Always display segmentation and strategy if they exist (PERSISTENT)
+        if st.session_state.get('current_segment') and st.session_state.get('current_recovery_strategy'):
+            display_segmentation_ui()  # This will use the segment and strategy from session state
         
         st.divider()
         st.write(f"**Total Sessions:** {len(st.session_state.all_sessions)}")
@@ -955,24 +927,20 @@ def main():
                         view_product(sim_prod)
                         st.session_state.viewing_product = sim_prod
                         st.rerun()
-        return
     
-    # Main shopping page
+        return
+        
+
     navigate_page('home')
     
     col1, col2 = st.columns([3, 1])
     
     with col1:
         st.header("🛍️ Browse Products")
-        
-        # Simulated scroll depth on main page
         scroll_val = st.slider("📜 Scroll depth", 0, 100, int(st.session_state.session_data['scroll_depth']), key="main_scroll")
         update_scroll_depth(scroll_val)
-        
-        # Category filter
         category_filter = st.selectbox("Filter by Category", ["All"] + list(set([p['category'] for p in PRODUCTS])))
-        filtered_products = PRODUCTS if category_filter == "All" else [p for p in PRODUCTS if p['category'] == category_filter]
-        
+        filtered_products = PRODUCTS if category_filter == "All" else [p for p in PRODUCTS if p['category'] == category_filter] 
         for i in range(0, len(filtered_products), 3):
             cols = st.columns(3)
             for j, product in enumerate(filtered_products[i:i+3]):
@@ -1049,7 +1017,7 @@ def main():
                         st.error(st.session_state.promo_message)
             
             st.divider()
-            
+
             for item in st.session_state.session_data['items']:
                 col_a, col_b = st.columns([3, 1])
                 with col_a:
@@ -1059,12 +1027,35 @@ def main():
                     if st.button("❌", key=f"rm_{item['id']}_{id(item)}", width='stretch'):
                         remove_from_cart(item['id'])
                         st.rerun()
+            st.divider()
+            st.subheader("💡 You Might Also Like")
+            
+            if 'recommender' not in st.session_state:
+                st.session_state.recommender = AprioriRecommender()
+            
+            recommendations = st.session_state.recommender.get_recommendations(
+                st.session_state.session_data['items']
+            )
+            
+            if recommendations:
+                for product in recommendations:
+                    col_a, col_b = st.columns([3, 1])
+                    with col_a:
+                        st.write(f"• {product['name']}")
+                        st.caption(f"₹{product['price']:.2f} | {product['category']}")
+                    with col_b:
+                        if st.button("🛒 Add", key=f"rec_{product['id']}", width='stretch'):
+                            add_to_cart(product)
+                            st.rerun()
+            else:
+                st.caption("Add more items to get personalized recommendations!")
         else:
             st.info("🛍️ Your cart is empty")
             st.caption("Browse products and add items to get started!")
     
     # Feature preview at bottom
     st.divider()
+    
     st.subheader("📋 Real-time Features")
     
     with st.expander("View calculated features for model", expanded=False):

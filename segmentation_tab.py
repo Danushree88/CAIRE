@@ -15,15 +15,10 @@ class SegmentAnalysisTab:
         self.df = None
         
     def load_data_and_segmenter(self):
-        """Load data and initialize segmenter from recovery.py"""
         try:
-            # Since segmentation_tab.py is in project root (CAIRE/)
-            project_root = Path(__file__).parent  # CAIRE
-            
-            # Add the current directory to Python path
+            project_root = Path(__file__).parent  
             sys.path.insert(0, str(project_root))
             
-            # Import your segmentation class
             try:
                 from src.recovery.recovery import EnhancedCustomerSegmenter
             except ImportError as import_err:
@@ -38,10 +33,9 @@ class SegmentAnalysisTab:
                     spec.loader.exec_module(recovery_module)
                     EnhancedCustomerSegmenter = recovery_module.EnhancedCustomerSegmenter
                 else:
-                    st.error(f"❌ Recovery.py not found at: {recovery_path}")
+                    st.error(f"Recovery.py not found at: {recovery_path}")
                     return None, None
             
-            # Load featured data
             possible_paths = [
                 project_root / "data" / "cart_abandonment_featured.csv",
                 project_root / "cart_abandonment_featured.csv",
@@ -55,12 +49,10 @@ class SegmentAnalysisTab:
                     st.success(f"✅ Data loaded from: {featured_path}")
                     break
             
-            # FIX: Check if df is None, not just truthy value
             if self.df is None:
-                st.error("❌ Could not find featured data file in any location")
+                st.error("Could not find featured data file in any location")
                 return None, None
             
-            # Check if required features exist
             required_features = [
                 'engagement_score', 'num_items_carted', 'cart_value', 
                 'session_duration', 'num_pages_viewed', 'scroll_depth',
@@ -73,11 +65,8 @@ class SegmentAnalysisTab:
                 st.error(f"❌ Missing required features: {missing_features}")
                 return None, None
             
-            # Initialize and fit segmenter
             self.segmenter = EnhancedCustomerSegmenter(n_segments=5)
             self.segmenter.fit(self.df)
-            
-            # Add segments to dataframe
             self.df['segment'] = self.segmenter.predict_segment(self.df)
             self.df['segment_name'] = self.df['segment'].map(
                 {k: v['segment_name'] for k, v in self.segmenter.segment_profiles.items()}
@@ -103,7 +92,6 @@ class SegmentAnalysisTab:
             warning_box("Segmentation data not available. Please check data files.")
             return
         
-        # Key metrics summary
         col1, col2, col3, col4 = st.columns(4)
         
         total_segments = len(self.segmenter.segment_profiles)
@@ -209,56 +197,6 @@ class SegmentAnalysisTab:
         
         st.dataframe(display_df, use_container_width=True)
 
-    def render_segment_insights(self):
-        """Render AI-powered segment insights"""
-        create_section("🔍 Deep Segment Insights", "AI-Generated Behavioral Analysis")
-        
-        if self.segmenter is None:
-            return
-        
-        # Segment insights and characteristics
-        for segment_id, profile in self.segmenter.segment_profiles.items():
-            with st.expander(f"🎯 {profile['segment_name']} - {profile['recovery_priority']} Priority", expanded=False):
-                
-                col1, col2 = st.columns([2, 1])
-                
-                with col1:
-                    st.write(f"**📝 {profile['description']}**")
-                    
-                    # Key metrics comparison to global average
-                    st.write("**📊 Performance vs Global Average:**")
-                    
-                    metrics_comparison = [
-                        ("Abandonment Rate", profile['abandonment_rate'], profile['global_avg_abandonment'], "lower"),
-                        ("Cart Value", profile['avg_cart_value'], profile['global_avg_cart_value'], "higher"),
-                        ("Engagement", profile['avg_engagement'], profile['global_avg_engagement'], "higher"),
-                        ("Return Rate", profile['return_user_rate'], profile['global_avg_return_rate'], "higher")
-                    ]
-                    
-                    for metric, segment_val, global_val, direction in metrics_comparison:
-                        diff = segment_val - global_val
-                        if direction == "lower":
-                            icon = "✅" if diff < 0 else "⚠️"
-                        else:
-                            icon = "✅" if diff > 0 else "⚠️"
-                        
-                        if metric == "Abandonment Rate":
-                            st.write(f"{icon} {metric}: {segment_val:.1f}% (Global: {global_val:.1f}%)")
-                        elif metric == "Cart Value":
-                            st.write(f"{icon} {metric}: {segment_val:.3f} (Global: {global_val:.3f})")
-                        elif metric == "Engagement":
-                            st.write(f"{icon} {metric}: {segment_val:.3f} (Global: {global_val:.3f})")
-                        else:
-                            st.write(f"{icon} {metric}: {segment_val:.1f}% (Global: {global_val:.1f}%)")
-                
-                with col2:
-                    # Recovery potential
-                    st.write("**🎯 Recovery Potential**")
-                    st.metric("Priority Score", f"{profile['recovery_priority_score']}/100")
-                    st.metric("Business Value", profile['business_value'])
-                    st.metric("Segment Size", f"{profile['size']} users")
-
-
     def render_recovery_strategies(self):
         """Render actionable strategy implementation panel"""
         create_section("🛠️ Strategy Implementation", "Deploy & Track Recovery Actions")
@@ -266,47 +204,37 @@ class SegmentAnalysisTab:
         if self.segmenter is None:
             return
         
-        # Strategy options for each segment
+        # Strategy options for each segment - UPDATED FOR 5 SEGMENTS
         strategy_options = {
-            "High-Value New Abandoners": [
-                "💎 VIP onboarding call within 1 hour",
-                "🚀 Personal executive email follow-up", 
-                "🎁 Exclusive welcome discount (15%)"
+            "High-Value Loyalists": [
+                "💎 VIP early access to new products",
+                "🎫 Double loyalty points campaign", 
+                "📧 Regular updates about products matching their preferences",
+                "🎁 Surprise free shipping or small gifts on next purchase"
             ],
-            "Checkout Abandoners": [
-                "⏰ 3-step abandoned cart email sequence",
-                "🔓 Simplify checkout process reminder",
-                "🛡️ Security & trust badges emphasis"
+            "At-Risk Converters": [
+                "🔥 Limited-time discount (10-15%) on abandoned items",
+                "🚀 Personal executive email follow-up",
+                "⏰ Stock availability alerts for items in cart",
+                "📞 Personal shopping assistant offer"
             ],
             "Engaged Researchers": [
                 "📚 Product expert consultation offer",
                 "🎥 Detailed product demonstration videos",
-                "💬 Live chat support promotion"
+                "💬 Live chat support promotion",
+                "🔍 Advanced product comparison tools"
             ],
-            "Price Sensitive Shoppers": [
+            "Price-Sensitive Shoppers": [
                 "💰 Tiered discounts based on cart value",
-                "📦 Free shipping threshold education", 
-                "🎯 Flash sale notifications"
-            ],
-            "Loyal High-Value Shoppers": [
-                "⭐ VIP early access to new products",
-                "🎫 Double loyalty points campaign",
-                "📊 Personalized product recommendations"
-            ],
-            "Loyal Low-Value Shoppers": [
-                "🔄 Loyalty program benefits reminder",
-                "📈 Volume discount incentives",
-                "🎁 Small surprise free gift"
+                "🎟️ Additional promo codes for next purchase",
+                "📦 Free shipping threshold reduction",
+                "🔄 Price drop alerts for watched items"
             ],
             "Casual Browsers": [
-                "👋 Welcome discount for first purchase",
-                "📱 Mobile app download incentive",
-                "🎯 Re-engagement email series"
-            ],
-            "Standard Shoppers": [
-                "📧 Standard abandoned cart emails",
-                "💡 Product recommendations",
-                "🚚 Free shipping offer"
+                "🌐 Personalized product recommendations",
+                "📢 New arrival notifications",
+                "🏆 Social proof and trending products",
+                "🔔 Re-engagement campaign after 7 days"
             ]
         }
         
@@ -324,7 +252,7 @@ class SegmentAnalysisTab:
                     # Strategy selection - UNIQUE KEY
                     selected_strategies = st.multiselect(
                         f"Choose strategies for {segment_name}:",
-                        options=strategy_options.get(segment_name, strategy_options["Standard Shoppers"]),
+                        options=strategy_options.get(segment_name, []),
                         default=[],
                         key=f"strategies_select_{segment_id}"  # UNIQUE KEY
                     )
@@ -382,44 +310,6 @@ class SegmentAnalysisTab:
                         key="bulk_calculate_budget", use_container_width=True):  # UNIQUE
                 st.success("Total budget calculation completed!")
 
-    def _calculate_expected_recovery(self, profile):
-        """Calculate expected recovery rate based on segment characteristics"""
-        base_rate = 15  # Base recovery rate
-        
-        # Adjust based on segment characteristics
-        if profile['recovery_priority'] == "Very High":
-            base_rate += 10
-        elif profile['recovery_priority'] == "High":
-            base_rate += 5
-        
-        if profile['avg_cart_value'] > profile['global_avg_cart_value']:
-            base_rate += 5
-        
-        if profile['return_user_rate'] > profile['global_avg_return_rate']:
-            base_rate += 3
-        
-        return f"{base_rate}-{base_rate + 15}"
-
-    def _get_implementation_timeline(self, priority):
-        """Get implementation timeline based on priority"""
-        timelines = {
-            "Very High": "1-3 days",
-            "High": "3-7 days", 
-            "Medium": "1-2 weeks",
-            "Low": "2-4 weeks"
-        }
-        return timelines.get(priority, "1-2 weeks")
-
-    def _get_resource_requirement(self, priority):
-        """Get resource requirement based on priority"""
-        resources = {
-            "Very High": "High (Dedicated team)",
-            "High": "Medium (Cross-functional)",
-            "Medium": "Low (Marketing team)",
-            "Low": "Minimal (Automated)"
-        }
-        return resources.get(priority, "Medium")
-
     def render_segment_actions(self):
         """Render actionable insights and next steps"""
         create_section("🚀 Recommended Actions", "Priority-Based Implementation Plan")
@@ -446,14 +336,33 @@ class SegmentAnalysisTab:
                         st.write(f"**{profile['segment_name']}**")
                         st.write(f"*Size: {profile['size']} users | Recovery Score: {profile['recovery_priority_score']}/100*")
                         
-                        # Quick wins
+                        # Quick wins based on segment type
                         st.write("**Quick Wins:**")
-                        if profile['abandonment_rate'] > 50:
+                        
+                        if profile['segment_name'] == "At-Risk Converters":
                             st.write("• Implement immediate abandoned cart email sequence")
-                        if profile['avg_cart_value'] > profile['global_avg_cart_value']:
                             st.write("• Assign dedicated high-value customer support")
-                        if profile['return_user_rate'] > 60:
-                            st.write("• Launch loyalty program benefits campaign")
+                            st.write("• Offer personalized discount codes")
+                            
+                        elif profile['segment_name'] == "Engaged Researchers":
+                            st.write("• Provide product expert consultation")
+                            st.write("• Share detailed product videos and guides")
+                            st.write("• Enable live chat support")
+                            
+                        elif profile['segment_name'] == "Price-Sensitive Shoppers":
+                            st.write("• Create tiered discount structure")
+                            st.write("• Highlight free shipping thresholds")
+                            st.write("• Send flash sale notifications")
+                            
+                        elif profile['segment_name'] == "High-Value Loyalists":
+                            st.write("• Offer VIP early access to products")
+                            st.write("• Enhance loyalty program benefits")
+                            st.write("• Provide personalized recommendations")
+                            
+                        elif profile['segment_name'] == "Casual Browsers":
+                            st.write("• Send welcome discount for first purchase")
+                            st.write("• Promote mobile app benefits")
+                            st.write("• Create re-engagement campaigns")
                         
                         st.write("")
 
@@ -469,13 +378,11 @@ class SegmentAnalysisTab:
         if self.segmenter and self.df is not None:
             success_box(f"✅ Successfully analyzed {len(self.df):,} customers across {len(self.segmenter.segment_profiles)} behavioral segments")
             
-            # Create tabs for different segmentation views - ADDED IMPLEMENTATION TAB
+            # Create tabs for different segmentation views
             seg_tabs = st.tabs([
                 "📊 Overview", 
                 "📈 Performance", 
-                "🔍 Deep Insights", 
-                "💡 Strategies", 
-                "🛠️ Implementation",  # NEW TAB
+                "🛠️ Strategies",
                 "🚀 Actions"
             ])
             
@@ -486,15 +393,9 @@ class SegmentAnalysisTab:
                 self.render_segment_performance()
             
             with seg_tabs[2]:
-                self.render_segment_insights()
-            
-            with seg_tabs[3]:
                 self.render_recovery_strategies()
             
-            with seg_tabs[4]:  # NEW IMPLEMENTATION TAB
-                self.render_strategy_implementation()
-            
-            with seg_tabs[5]:
+            with seg_tabs[3]:
                 self.render_segment_actions()
         else:
             error_box("""

@@ -3,14 +3,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
 from sklearn.cluster import KMeans
+from sklearn.mixture import GaussianMixture
+import hdbscan
+import time
 import os
 import warnings
 warnings.filterwarnings('ignore')
 
 class EnhancedCustomerSegmenter:
-    """Enhanced segmentation with better feature engineering and sensitivity"""
-    
     def __init__(self, n_segments=5):
         self.n_segments = n_segments
         self.kmeans = None
@@ -18,10 +20,9 @@ class EnhancedCustomerSegmenter:
         self.segment_profiles = {}
         self.feature_columns = []
         self.global_metrics = {}
+        self.assigned_segments = set()  # Track assigned segment names
         
     def _engineer_segmentation_features(self, df):
-        """Create enhanced features for better segmentation - FIXED"""
-        # Basic features - ensure they exist
         required_features = [
             'engagement_score', 'num_items_carted', 'cart_value', 
             'session_duration', 'num_pages_viewed', 'scroll_depth',
@@ -29,15 +30,11 @@ class EnhancedCustomerSegmenter:
             'has_viewed_shipping_info', 'abandoned'
         ]
         
-        # Check if all required features exist
         missing_features = [f for f in required_features if f not in df.columns]
         if missing_features:
             raise ValueError(f"Missing required features: {missing_features}")
         
         features = df[required_features].copy()
-        
-        # Create enhanced behavioral features - FIXED LOGIC
-        # Normalize before creating composite features to avoid scaling issues
         features['browsing_intensity'] = (
             self._normalize_feature(df['num_pages_viewed']) + 
             self._normalize_feature(df['session_duration'])
@@ -48,15 +45,11 @@ class EnhancedCustomerSegmenter:
             df['has_viewed_shipping_info']
         ) / 2
         
-        # Use normalized values for multiplication to avoid extreme values
         cart_norm = self._normalize_feature(df['cart_value'])
         engagement_norm = self._normalize_feature(df['engagement_score'])
         features['value_engagement_ratio'] = cart_norm * engagement_norm
         
-        # FIXED: research_behavior should compare to pages viewed median, not items
         features['research_behavior'] = (df['num_pages_viewed'] > df['num_pages_viewed'].median()).astype(int)
-        
-        # FIXED: purchase_intent with proper weights that sum to 1.0
         features['purchase_intent'] = (
             self._normalize_feature(df['num_items_carted']) * 0.25 +
             df['if_payment_page_reached'] * 0.25 +
@@ -72,11 +65,9 @@ class EnhancedCustomerSegmenter:
         return (series - series.min()) / (series.max() - series.min())
     
     def _create_enhanced_segments(self, df, labels):
-        """Create more sensitive segment profiles - FIXED"""
         df_segmented = df.copy()
         df_segmented['segment'] = labels
         
-        # Calculate global metrics - FIXED: store for later use
         self.global_metrics = {
             'global_avg_cart_value': df['cart_value'].mean(),
             'global_avg_engagement': df['engagement_score'].mean(),
@@ -96,13 +87,10 @@ class EnhancedCustomerSegmenter:
             
             if len(segment_data) == 0:
                 continue
-                
-            # Calculate comprehensive metrics
             profile = {
                 'size': len(segment_data),
                 'size_percentage': len(segment_data) / len(df) * 100,
                 
-                # Core metrics
                 'abandonment_rate': segment_data['abandoned'].mean() * 100,
                 'avg_cart_value': segment_data['cart_value'].mean(),
                 'avg_engagement': segment_data['engagement_score'].mean(),
@@ -110,33 +98,26 @@ class EnhancedCustomerSegmenter:
                 'avg_session_duration': segment_data['session_duration'].mean(),
                 'avg_pages_viewed': segment_data['num_pages_viewed'].mean(),
                 'avg_scroll_depth': segment_data['scroll_depth'].mean(),
-                
-                # User characteristics
                 'return_user_rate': segment_data['return_user'].mean() * 100,
                 'discount_sensitivity': segment_data['discount_applied'].mean() * 100,
                 'payment_reach_rate': segment_data['if_payment_page_reached'].mean() * 100,
                 'shipping_info_view_rate': segment_data['has_viewed_shipping_info'].mean() * 100,
             }
             
-            # Add global metrics for comparison
             profile.update(self.global_metrics)
             
-            # Enhanced segment identification
-            profile.update(self._enhanced_segment_identification(profile))
+            profile.update(self._enhanced_segment_identification(profile, segment_id))
             segment_profiles[segment_id] = profile
             
         return segment_profiles
     
-    def _enhanced_segment_identification(self, profile):
-        """Simplified segment identification focusing on 5 core segments - FIXED"""
-        # Calculate relative scores (how far from global average)
+    def _enhanced_segment_identification(self, profile, segment_id):
         rel_abandonment = profile['abandonment_rate'] - profile['global_avg_abandonment']
         rel_cart_value = profile['avg_cart_value'] - profile['global_avg_cart_value']
         rel_engagement = profile['avg_engagement'] - profile['global_avg_engagement']
         rel_return_rate = profile['return_user_rate'] - profile['global_avg_return_rate']
         rel_payment_reach = profile['payment_reach_rate'] - profile['global_avg_payment_reach']
-        
-        # FOCUS ON 5 CORE SEGMENTS ONLY
+
         segment_scores = {
             'High-Value Loyalists': 0,      # High value, high loyalty, low abandonment
             'At-Risk Converters': 0,        # High value, low loyalty, medium abandonment  
@@ -178,9 +159,18 @@ class EnhancedCustomerSegmenter:
         best_segment = max(segment_scores, key=segment_scores.get)
         best_score = segment_scores[best_segment]
         
-        # Fallback for low scores
+        if best_segment in self.assigned_segments and best_score < 6:
+            sorted_segments = sorted(segment_scores.items(), key=lambda x: x[1], reverse=True)
+            for segment_name, score in sorted_segments:
+                if segment_name not in self.assigned_segments and score >= 3:
+                    best_segment = segment_name
+                    best_score = score
+                    break
+        
         if best_score < 3:
             best_segment = self._simplified_segment_fallback(profile)
+            
+        self.assigned_segments.add(best_segment)
         
         segment_info = {
             'segment_name': best_segment,
@@ -194,23 +184,21 @@ class EnhancedCustomerSegmenter:
         return segment_info
     
     def _simplified_segment_fallback(self, profile):
-        """Simplified fallback logic for 5 segments"""
-        # Check loyalty and value first
         if profile['return_user_rate'] > 50:
             if profile['avg_cart_value'] > profile['global_avg_cart_value']:
-                return "High-Value Loyalists"
+                if "High-Value Loyalists" not in self.assigned_segments:
+                    return "High-Value Loyalists"
+                else:
+                    return "At-Risk Converters" 
             else:
-                return "Price-Sensitive Shoppers"  # Loyal but price sensitive
+                return "Price-Sensitive Shoppers" 
         
-        # Check high value but new
         if profile['avg_cart_value'] > profile['global_avg_cart_value']:
             return "At-Risk Converters"
         
-        # Check high engagement
         if profile['avg_engagement'] > profile['global_avg_engagement']:
             return "Engaged Researchers"
-        
-        # Check discount sensitivity
+
         if profile['discount_sensitivity'] > 40:
             return "Price-Sensitive Shoppers"
         
@@ -218,7 +206,6 @@ class EnhancedCustomerSegmenter:
         return "Casual Browsers"
     
     def _get_segment_description(self, segment_name):
-        """Get segment descriptions for 5 core segments"""
         descriptions = {
             "High-Value Loyalists": "Frequent high-spending customers with low abandonment rates",
             "At-Risk Converters": "High-value new customers who need conversion encouragement",
@@ -229,7 +216,6 @@ class EnhancedCustomerSegmenter:
         return descriptions.get(segment_name, "Users with typical shopping behavior")
     
     def _get_segment_priority(self, segment_name, profile):
-        """Get recovery priority based on 5 segments"""
         base_priority = {
             "At-Risk Converters": "Very High",
             "Engaged Researchers": "High",
@@ -240,7 +226,6 @@ class EnhancedCustomerSegmenter:
         
         priority = base_priority.get(segment_name, "Medium")
         
-        # Adjust based on actual abandonment rate
         if profile['abandonment_rate'] > 70:
             priority = "Very High"
         elif profile['abandonment_rate'] > 50 and priority == "Medium":
@@ -249,7 +234,6 @@ class EnhancedCustomerSegmenter:
         return priority
     
     def _get_business_value(self, segment_name):
-        """Get business value rating for 5 segments"""
         value_map = {
             "High-Value Loyalists": "Very High",
             "At-Risk Converters": "High",
@@ -260,7 +244,6 @@ class EnhancedCustomerSegmenter:
         return value_map.get(segment_name, "Medium")
     
     def _calculate_enhanced_priority(self, profile):
-        """Enhanced priority scoring - FIXED"""
         weights = {
             'abandonment_rate': 0.35,
             'avg_cart_value': 0.20,
@@ -292,59 +275,198 @@ class EnhancedCustomerSegmenter:
         
         return min(int(priority_score * 100), 100)
     
-    def fit(self, df):
-        """Perform enhanced customer segmentation"""
+    def _evaluate_clustering(self, X_scaled, labels, method_name):
         try:
-            # Use engineered features
-            features_df = self._engineer_segmentation_features(df)
-            self.feature_columns = features_df.columns.tolist()
+            silhouette = silhouette_score(X_scaled, labels)
+            calinski = calinski_harabasz_score(X_scaled, labels)
+            davies = davies_bouldin_score(X_scaled, labels)
             
-            X = features_df.values
+            evaluation = {
+                'method': method_name,
+                'silhouette_score': silhouette,
+                'calinski_harabasz_score': calinski,
+                'davies_bouldin_score': davies,
+                'n_clusters': len(np.unique(labels))
+            }
             
-            # Scale features
-            X_scaled = self.scaler.fit_transform(X)
+            print(f"📊 {method_name} Evaluation:")
+            print(f"   Silhouette Score: {silhouette:.4f} (higher is better)")
+            print(f"   Calinski-Harabasz: {calinski:.4f} (higher is better)")
+            print(f"   Davies-Bouldin: {davies:.4f} (lower is better)")
             
-            # Perform K-means clustering
-            self.kmeans = KMeans(n_clusters=self.n_segments, random_state=42, n_init=10)
-            labels = self.kmeans.fit_predict(X_scaled)
-            
-            # Create enhanced segment profiles
-            self.segment_profiles = self._create_enhanced_segments(df, labels)
-            
-            print("🎯 Enhanced segmentation completed!")
-            return self
-            
+            return evaluation
         except Exception as e:
-            print(f"❌ Error in segmentation: {e}")
-            raise
+            print(f"⚠️ Evaluation failed for {method_name}: {e}")
+            return None
     
+    def kmeans_from_scratch(self, X, max_iters=100, restarts=5):
+        n_samples, n_features = X.shape
+        best_inertia = np.inf
+        best_labels, best_centroids = None, None
+
+        for _ in range(restarts):
+            # Random initialization
+            init_idx = np.random.choice(n_samples, self.n_segments, replace=False)
+            centroids = X[init_idx]
+
+            for _ in range(max_iters):
+                # Assign clusters
+                distances = np.linalg.norm(X[:, np.newaxis] - centroids, axis=2)
+                labels = np.argmin(distances, axis=1)
+
+                # Recompute centroids
+                new_centroids = np.array([
+                    X[labels == i].mean(axis=0) if np.any(labels == i) else centroids[i]
+                    for i in range(self.n_segments)
+                ])
+
+                if np.allclose(centroids, new_centroids):
+                    break
+                centroids = new_centroids
+
+            # Compute inertia
+            inertia = sum(((X[labels == i] - centroids[i]) ** 2).sum() for i in range(self.n_segments))
+
+            # Keep best
+            if inertia < best_inertia:
+                best_inertia, best_labels, best_centroids = inertia, labels, centroids
+
+        self.centroids = best_centroids  # store centroids
+        return best_labels, best_centroids, best_inertia
+
+    # ------------------------
+    #  Predict using KMeans
+    # ------------------------
     def predict_segment(self, df):
-        """Predict segments for new data"""
-        if not hasattr(self, 'feature_columns') or not self.feature_columns:
+        if not hasattr(self, 'feature_columns') or len(self.feature_columns) == 0:
             raise ValueError("Segmenter must be fitted before prediction")
-        
-        # Use the same feature engineering as during fit
+
         features_df = self._engineer_segmentation_features(df)
-        
-        # Ensure we have the same columns as during training
         missing_cols = set(self.feature_columns) - set(features_df.columns)
         if missing_cols:
             raise ValueError(f"Missing features for prediction: {missing_cols}")
         
         X = features_df[self.feature_columns].values
         X_scaled = self.scaler.transform(X)
-        return self.kmeans.predict(X_scaled)
+
+        if self.centroids is not None:
+            distances = np.linalg.norm(X_scaled[:, np.newaxis] - self.centroids, axis=2)
+            labels = np.argmin(distances, axis=1)
+            return labels
+        else:
+            raise ValueError("No KMeans centroids found. Fit the model first.")
+
+    def fit(self, df, method='auto'):
+        """Perform enhanced segmentation with KMeans, GMM, or HDBSCAN"""
+        try:
+            print("\n🔄 Performing Enhanced Customer Segmentation (5 Segments)...")
+
+            features_df = self._engineer_segmentation_features(df)
+            self.feature_columns = features_df.columns
+            X = features_df.values
+            X_scaled = self.scaler.fit_transform(X)
+
+            best_score = -1
+            best_labels = None
+            best_method = None
+            evaluations = []
+
+            # ------------------------
+            # KMEANS
+            # ------------------------
+            print("\n🔍 Testing KMeans clustering...")
+            start_time = time.time()
+            kmeans_labels, kmeans_centroids, kmeans_inertia = self.kmeans_from_scratch(X_scaled, self.n_segments)
+            print(f"[INFO] KMeans from scratch | Inertia: {kmeans_inertia:.2f}")
+            kmeans_time = time.time() - start_time
+
+            kmeans_eval = self._evaluate_clustering(X_scaled, kmeans_labels, "KMeans")
+            if kmeans_eval:
+                kmeans_eval['time'] = kmeans_time
+                evaluations.append(kmeans_eval)
+                if kmeans_eval['silhouette_score'] > best_score:
+                    best_score = kmeans_eval['silhouette_score']
+                    best_labels = kmeans_labels
+                    best_method = 'kmeans'
+                    self.kmeans = self  # keep class reference for predict
+
+            # ------------------------
+            # GMM
+            # ------------------------
+            print("\n🔍 Testing Gaussian Mixture Model...")
+            start_time = time.time()
+            gmm = GaussianMixture(n_components=self.n_segments, random_state=42)
+            gmm_labels = gmm.fit_predict(X_scaled)
+            gmm_time = time.time() - start_time
+
+            gmm_eval = self._evaluate_clustering(X_scaled, gmm_labels, "GMM")
+            if gmm_eval:
+                gmm_eval['time'] = gmm_time
+                evaluations.append(gmm_eval)
+                if gmm_eval['silhouette_score'] > best_score:
+                    best_score = gmm_eval['silhouette_score']
+                    best_labels = gmm_labels
+                    best_method = 'gmm'
+                    self.kmeans = gmm  # reference GMM
+
+            # ------------------------
+            # HDBSCAN
+            # ------------------------
+            print("\n🔍 Testing HDBSCAN clustering...")
+            start_time = time.time()
+            clusterer = hdbscan.HDBSCAN(min_cluster_size=30, min_samples=10)
+            hdb_labels = clusterer.fit_predict(X_scaled)
+            hdb_time = time.time() - start_time
+
+            unique_clusters = len(set(hdb_labels)) - (1 if -1 in hdb_labels else 0)
+            print(f"🌀 HDBSCAN found {unique_clusters} clusters (excluding noise)")
+
+            if unique_clusters > 1:
+                hdb_eval = self._evaluate_clustering(X_scaled[hdb_labels != -1], hdb_labels[hdb_labels != -1], "HDBSCAN")
+                if hdb_eval:
+                    hdb_eval['time'] = hdb_time
+                    evaluations.append(hdb_eval)
+                    if hdb_eval['silhouette_score'] > best_score:
+                        best_score = hdb_eval['silhouette_score']
+                        best_labels = hdb_labels
+                        best_method = 'hdbscan'
+                        self.kmeans = clusterer
+            else:
+                print("⚠️ HDBSCAN produced only noise or a single cluster — skipping evaluation.")
+
+            # ------------------------
+            # Manual override
+            # ------------------------
+            if method != 'auto':
+                if method == 'kmeans':
+                    best_labels = kmeans_labels
+                    best_method = 'kmeans'
+                    self.kmeans = self
+                elif method == 'gmm':
+                    best_labels = gmm_labels
+                    best_method = 'gmm'
+                    self.kmeans = gmm
+                elif method == 'hdbscan':
+                    best_labels = hdb_labels
+                    best_method = 'hdbscan'
+                    self.kmeans = clusterer
+
+            print("\n✅ Selected:", best_method.upper())
+
+            self.segment_profiles = self._create_enhanced_segments(df, best_labels)
+            print("🎯 Enhanced segmentation completed!")
+            print(f"📋 Assigned segments: {self.assigned_segments}")
+            return self
+
+        except Exception as e:
+            print(f"Error in segmentation: {e}")
+            raise
 
 def main():
-    """Enhanced segmentation with simplified 5-segment approach"""
     try:
-        # Get the correct paths
         current_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.dirname(os.path.dirname(current_dir))
-        
-        # Load featured dataset
         featured_path = os.path.join(project_root, 'data', 'cart_abandonment_featured.csv')
-        
         print("=== Loading Dataset ===")
         print(f"Featured data: {featured_path}")
         
@@ -357,14 +479,16 @@ def main():
             print(f"   - Engagement score range: {df['engagement_score'].min():.3f} to {df['engagement_score'].max():.3f}")
             print(f"   - Return user rate: {df['return_user'].mean():.1%}")
         else:
-            print("❌ Featured dataset not found!")
+            print("Featured dataset not found!")
             return
         
         print("\n🔄 Performing Enhanced Customer Segmentation (5 Segments)...")
         
-        # Initialize and fit enhanced segmenter
+        # Initialize and fit enhanced segmenter with algorithm comparison
         segmenter = EnhancedCustomerSegmenter(n_segments=5)
-        segmenter.fit(df)
+        
+        # You can specify method: 'auto', 'kmeans', or 'gmm'
+        segmenter.fit(df, method='auto')  # 'auto' will choose the best one
         
         # Add segments to original dataframe
         df['segment'] = segmenter.predict_segment(df)
@@ -386,7 +510,7 @@ def main():
             print(f"   💼 Business Value: {profile['business_value']}")
             
     except Exception as e:
-        print(f"❌ Error in main execution: {e}")
+        print(f"Error in main execution: {e}")
         import traceback
         traceback.print_exc()
 

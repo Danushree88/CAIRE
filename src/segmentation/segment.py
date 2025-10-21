@@ -2,11 +2,30 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.preprocessing import StandardScaler
-from sklearn.cluster import KMeans
 import os
 import warnings
 warnings.filterwarnings('ignore')
+
+def analyze_data_type(df):
+    """Analyze if data is normalized (0-1) or actual values"""
+    print("🔍 DATA TYPE ANALYSIS")
+    print("=" * 40)
+    
+    cart_range = (df['cart_value'].min(), df['cart_value'].max())
+    eng_range = (df['engagement_score'].min(), df['engagement_score'].max())
+    
+    print(f"💰 Cart Value: {cart_range[0]:.2f} to {cart_range[1]:.2f}")
+    print(f"🎯 Engagement: {eng_range[0]:.2f} to {eng_range[1]:.2f}")
+    
+    # Check if data appears normalized
+    is_normalized = (cart_range[1] <= 1.0 and eng_range[1] <= 1.0)
+    
+    if is_normalized:
+        print("📊 DATA TYPE: NORMALIZED (0-1 scale)")
+    else:
+        print("📊 DATA TYPE: ACTUAL VALUES")
+    
+    return is_normalized
 
 def normalize_customer_data(df):
     """Normalize raw customer data to 0-1 range for segmentation"""
@@ -32,169 +51,18 @@ def normalize_customer_data(df):
                 df_normalized[feature] = 0.5  # Default if all values same
     
     return df_normalized
-import pandas as pd
 
-# ✅ Hybrid segmentation entry point
-def segment_input_data(segmenter, input_data):
-    """
-    Detects if input_data is a single record or multiple records
-    and applies appropriate segmentation logic.
-    """
-    # If it's a single record (dict or single-row DataFrame)
-    if isinstance(input_data, dict) or (isinstance(input_data, pd.DataFrame) and len(input_data) == 1):
-        print("⚙️ Single record detected — using rule-based segmentation")
-        if isinstance(input_data, pd.DataFrame):
-            features = input_data.iloc[0].to_dict()
-        else:
-            features = input_data
-        return apply_rule_based_segmentation(features)
-
-    # Otherwise — use your trained clustering model
-    print("⚙️ Multiple records detected — running ML-based segmentation")
-    return segmenter.fit_predict(input_data)
-
-
-# ✅ Rule-based segmentation fallback (consistent with your 5 main segments)
-def apply_rule_based_segmentation(features):
-    """
-    Simple rule-based logic to mimic main segments for single-user cases.
-    Works even without ML model context.
-    """
-    try:
-        # Extract key features safely
-        cart_value = features.get('cart_value', 0)
-        engagement = features.get('engagement_score', 0)
-        return_user = features.get('return_user', 0)
-        num_pages = features.get('num_pages_viewed', 0)
-        num_items = features.get('num_items_carted', 0)
-        abandoned = features.get('abandoned', 0)
-        payment_reached = features.get('if_payment_page_reached', 0)
-        discount_applied = features.get('discount_applied', 0)
-
-        print(f"📊 Cart Value: ₹{cart_value:.2f}, Engagement: {engagement}, Return User: {return_user}")
-
-        # 🔹 Match with your 5 core segments
-        if return_user == 1 and cart_value > 800 and engagement > 6 and payment_reached == 1:
-            segment = "High-Value Loyalists"
-
-        elif return_user == 0 and abandoned == 1 and cart_value > 400 and payment_reached == 0:
-            segment = "At-Risk Converters"
-
-        elif engagement >= 7 and num_pages > 4 and payment_reached == 0:
-            segment = "Engaged Researchers"
-
-        elif discount_applied == 1 or cart_value < 200:
-            segment = "Price-Sensitive Shoppers"
-
-        else:
-            segment = "Casual Browsers"
-
-       
-        print(f"🎯 Assigned Segment: {segment}")
-        return [segment]  # Return as list to match ML output format
-
-    except Exception as e:
-        print(f"❌ Rule-based segmentation error: {e}")
-        return ["Casual Browsers"]
-
-class EnhancedCustomerSegmenter:
-    """Enhanced segmentation with better feature engineering and sensitivity"""
+class RuleBasedCustomerSegmenter:
+    """Rule-based segmentation for 5 core customer segments - CORRECTED"""
     
-    def __init__(self, n_segments=5):
-        self.n_segments = n_segments
-        self.kmeans = None
-        self.scaler = StandardScaler()
+    def __init__(self, use_normalized_data=False):
         self.segment_profiles = {}
-        self.feature_columns = []
         self.global_metrics = {}
+        self.use_normalized_data = use_normalized_data
+        print(f"🎯 Segmenter initialized for {'NORMALIZED' if use_normalized_data else 'ACTUAL'} data")
         
-    def _engineer_segmentation_features(self, df):
-        """Create enhanced features for better segmentation - WITH NaN PROTECTION"""
-        # Basic features - ensure they exist
-        required_features = [
-            'engagement_score', 'num_items_carted', 'cart_value', 
-            'session_duration', 'num_pages_viewed', 'scroll_depth',
-            'return_user', 'if_payment_page_reached', 'discount_applied',
-            'has_viewed_shipping_info', 'abandoned'
-        ]
-        
-        # Check if all required features exist
-        missing_features = [f for f in required_features if f not in df.columns]
-        if missing_features:
-            raise ValueError(f"Missing required features: {missing_features}")
-        
-        features = df[required_features].copy()
-        
-        # Create enhanced behavioral features - WITH NaN PROTECTION
-        features['browsing_intensity'] = (
-            self._normalize_feature(df['num_pages_viewed']) + 
-            self._normalize_feature(df['session_duration'])
-        ) / 2
-        
-        features['purchase_readiness'] = (
-            df['if_payment_page_reached'] + 
-            df['has_viewed_shipping_info']
-        ) / 2
-        
-        # Use normalized values for multiplication to avoid extreme values
-        cart_norm = self._normalize_feature(df['cart_value'])
-        engagement_norm = self._normalize_feature(df['engagement_score'])
-        features['value_engagement_ratio'] = cart_norm * engagement_norm
-        
-        # FIXED: research_behavior with NaN protection
-        median_pages = df['num_pages_viewed'].median()
-        if pd.isna(median_pages):  # Handle case where median is NaN
-            median_pages = df['num_pages_viewed'].mean()  # Fallback to mean
-        if pd.isna(median_pages):  # If still NaN, use default
-            median_pages = 3
-        features['research_behavior'] = (df['num_pages_viewed'] > median_pages).astype(int)
-        
-        # FIXED: purchase_intent with NaN protection
-        features['purchase_intent'] = (
-            self._normalize_feature(df['num_items_carted']) * 0.25 +
-            df['if_payment_page_reached'].fillna(0) * 0.25 +
-            df['has_viewed_shipping_info'].fillna(0) * 0.25 +
-            self._normalize_feature(df['engagement_score']) * 0.25
-        )
-        
-        # FINAL NaN CHECK AND CLEANUP
-        nan_count = features.isna().sum().sum()
-        if nan_count > 0:
-            print(f"⚠️ Engineered features have {nan_count} NaN values, filling with safe defaults")
-            # Fill with column-specific safe values
-            for col in features.columns:
-                if features[col].isna().any():
-                    if features[col].dtype in ['int64', 'int32']:
-                        features[col] = features[col].fillna(0)
-                    elif features[col].dtype in ['float64', 'float32']:
-                        features[col] = features[col].fillna(0.5)  # Use 0.5 for normalized features
-                    else:
-                        features[col] = features[col].fillna(0)
-        
-        print(f"📊 Using {len(features.columns)} enhanced features for segmentation")
-        return features
-    
-    def _normalize_feature(self, series):
-        """Normalize a feature series to 0-1 range with NaN protection"""
-        # Handle case where all values are the same (avoid division by zero)
-        if series.min() == series.max():
-            # Return 0.5 for all values (middle ground)
-            return pd.Series([0.5] * len(series), index=series.index)
-        
-        normalized = (series - series.min()) / (series.max() - series.min())
-        
-        # Replace any NaN that might have occurred
-        if normalized.isna().any():
-            normalized = normalized.fillna(0.5)
-        
-        return normalized
-    
-    def _create_enhanced_segments(self, df, labels):
-        """Create more sensitive segment profiles - FIXED"""
-        df_segmented = df.copy()
-        df_segmented['segment'] = labels
-        
-        # Calculate global metrics - FIXED: store for later use
+    def calculate_global_metrics(self, df):
+        """Calculate global metrics for comparison"""
         self.global_metrics = {
             'global_avg_cart_value': df['cart_value'].mean(),
             'global_avg_engagement': df['engagement_score'].mean(),
@@ -206,16 +74,147 @@ class EnhancedCustomerSegmenter:
             'global_max_cart_value': df['cart_value'].max(),
             'global_min_cart_value': df['cart_value'].min()
         }
+        return self.global_metrics
+    
+    def segment_single_customer(self, customer_data):
+        """
+        Segment a single customer using CORRECT rule-based logic
+        """
+        # Extract key features safely with defaults
+        cart_value = customer_data.get('cart_value', 0)
+        engagement_score = customer_data.get('engagement_score', 0)
+        return_user = customer_data.get('return_user', 0)
+        num_pages_viewed = customer_data.get('num_pages_viewed', 0)
+        num_items_carted = customer_data.get('num_items_carted', 0)
+        abandoned = customer_data.get('abandoned', 0)
+        if_payment_page_reached = customer_data.get('if_payment_page_reached', 0)
+        discount_applied = customer_data.get('discount_applied', 0)
         
+        print(f"📊 Customer Features:")
+        print(f"   Cart Value: {cart_value:.2f}")
+        print(f"   Engagement: {engagement_score:.2f}")
+        print(f"   Return User: {return_user}")
+        print(f"   Abandoned: {abandoned}")
+        print(f"   Payment Reached: {if_payment_page_reached}")
+        print(f"   Discount Applied: {discount_applied}")
+        print(f"   Pages Viewed: {num_pages_viewed}")
+        
+        if self.use_normalized_data:
+            return self._segment_normalized(
+                cart_value, engagement_score, return_user, abandoned,
+                if_payment_page_reached, discount_applied, num_pages_viewed, num_items_carted
+            )
+        else:
+            return self._segment_actual(
+                cart_value, engagement_score, return_user, abandoned,
+                if_payment_page_reached, discount_applied, num_pages_viewed, num_items_carted
+            )
+    
+    def _segment_normalized(self, cart_value, engagement, return_user, abandoned, 
+                           payment_reached, discount_applied, pages_viewed, items_carted):
+        """Segmentation for NORMALIZED data (0-1 scale)"""
+        # 1. High-Value Loyalists
+        if (return_user == 1 and 
+            cart_value > 0.7 and      # High cart value
+            engagement > 0.7 and      # High engagement  
+            payment_reached == 1 and  # Reached payment
+            abandoned == 0):          # Didn't abandon
+            segment = "High-Value Loyalists"
+            
+        # 2. At-Risk Converters  
+        elif (return_user == 0 and      # New customer
+              abandoned == 1 and        # Abandoned cart
+              cart_value > 0.5 and      # Good cart value
+              payment_reached == 0):    # Didn't reach payment
+            segment = "At-Risk Converters"
+            
+        # 3. Engaged Researchers
+        elif (engagement >= 0.7 and     # High engagement
+              pages_viewed > 0.6 and    # Many pages viewed
+              items_carted > 0 and      # Added items to cart
+              payment_reached == 0):    # Didn't complete purchase
+            segment = "Engaged Researchers"
+            
+        # 4. Price-Sensitive Shoppers
+        elif (discount_applied == 1 or   # Used discount
+              cart_value < 0.3):         # Low spending
+            segment = "Price-Sensitive Shoppers"
+            
+        # 5. Casual Browsers (default)
+        else:
+            segment = "Casual Browsers"
+        
+        print(f"🎯 Assigned Segment: {segment}")
+        return segment
+    
+    def _segment_actual(self, cart_value, engagement, return_user, abandoned, 
+                       payment_reached, discount_applied, pages_viewed, items_carted):
+        """Segmentation for ACTUAL data values - CORRECTED THRESHOLDS"""
+        # 1. High-Value Loyalists
+        if (return_user == 1 and 
+            cart_value > 5000 and      # High cart value (₹5000+)
+            engagement > 7 and         # High engagement (7+/10)
+            payment_reached == 1 and   # Reached payment
+            abandoned == 0):           # Didn't abandon
+            segment = "High-Value Loyalists"
+            
+        # 2. At-Risk Converters  
+        elif (return_user == 0 and      # New customer
+              abandoned == 1 and        # Abandoned cart
+              cart_value > 1000 and     # Good cart value (₹1000+)
+              payment_reached == 0):    # Didn't reach payment
+            segment = "At-Risk Converters"
+            
+        # 3. Engaged Researchers
+        elif (engagement >= 7 and       # High engagement (7+/10)
+              pages_viewed > 6 and      # Many pages viewed (6+)
+              items_carted > 0 and      # Added items to cart
+              payment_reached == 0):    # Didn't complete purchase
+            segment = "Engaged Researchers"
+            
+        # 4. Price-Sensitive Shoppers
+        elif (discount_applied == 1 or   # Used discount
+              cart_value < 500):         # Low spending (<₹500)
+            segment = "Price-Sensitive Shoppers"
+            
+        # 5. Casual Browsers (default)
+        else:
+            segment = "Casual Browsers"
+        
+        print(f"🎯 Assigned Segment: {segment}")
+        return segment
+    
+    def segment_dataset(self, df):
+        """
+        Segment entire dataset using rule-based logic
+        """
+        print("🔄 Performing rule-based segmentation on dataset...")
+        
+        # Calculate global metrics
+        self.calculate_global_metrics(df)
+        
+        segments = []
+        
+        for idx, row in df.iterrows():
+            customer_data = row.to_dict()
+            segment = self.segment_single_customer(customer_data)
+            segments.append(segment)
+        
+        df_segmented = df.copy()
+        df_segmented['segment'] = segments
+        
+        # Create aggregate segment profiles
+        self._create_aggregate_segment_profiles(df_segmented)
+        
+        return df_segmented
+    
+    def _create_aggregate_segment_profiles(self, df):
+        """Create aggregate profiles for each segment"""
         segment_profiles = {}
         
-        for segment_id in range(self.n_segments):
-            segment_data = df_segmented[df_segmented['segment'] == segment_id]
+        for segment_name in df['segment'].unique():
+            segment_data = df[df['segment'] == segment_name]
             
-            if len(segment_data) == 0:
-                continue
-                
-            # Calculate comprehensive metrics
             profile = {
                 'size': len(segment_data),
                 'size_percentage': len(segment_data) / len(df) * 100,
@@ -233,152 +232,48 @@ class EnhancedCustomerSegmenter:
                 'return_user_rate': segment_data['return_user'].mean() * 100,
                 'discount_sensitivity': segment_data['discount_applied'].mean() * 100,
                 'payment_reach_rate': segment_data['if_payment_page_reached'].mean() * 100,
-                'shipping_info_view_rate': segment_data['has_viewed_shipping_info'].mean() * 100,
+                
+                # Segment info
+                'segment_name': segment_name,
+                'description': self._get_segment_description(segment_name),
+                'recovery_priority': self._get_aggregate_priority(segment_name, segment_data),
+                'business_value': self._get_business_value(segment_name),
+                'recovery_priority_score': self._calculate_aggregate_priority_score(segment_data)
             }
             
-            # Add global metrics for comparison
-            profile.update(self.global_metrics)
-            
-            # Enhanced segment identification
-            profile.update(self._enhanced_segment_identification(profile))
-            segment_profiles[segment_id] = profile
-            
+            segment_profiles[segment_name] = profile
+        
+        self.segment_profiles = segment_profiles
         return segment_profiles
-    
-    def _enhanced_segment_identification(self, profile):
-        """Fixed segment identification with better business logic"""
-        # Calculate relative scores (how far from global average)
-        rel_abandonment = profile['abandonment_rate'] - profile['global_avg_abandonment']
-        rel_cart_value = profile['avg_cart_value'] - profile['global_avg_cart_value']
-        rel_engagement = profile['avg_engagement'] - profile['global_avg_engagement']
-        rel_return_rate = profile['return_user_rate'] - profile['global_avg_return_rate']
-        rel_payment_reach = profile['payment_reach_rate'] - profile['global_avg_payment_reach']
-        
-        # DEBUG: Print key metrics to understand the classification
-        print(f"\n🔍 SEGMENT DEBUG for profile:")
-        print(f"   Cart Value: {profile['avg_cart_value']:.3f} (global: {profile['global_avg_cart_value']:.3f})")
-        print(f"   Abandonment: {profile['abandonment_rate']:.1f}% (global: {profile['global_avg_abandonment']:.1f}%)")
-        print(f"   Engagement: {profile['avg_engagement']:.3f} (global: {profile['global_avg_engagement']:.3f})")
-        print(f"   Return Rate: {profile['return_user_rate']:.1f}% (global: {profile['global_avg_return_rate']:.1f}%)")
-        print(f"   Payment Reach: {profile['payment_reach_rate']:.1f}% (global: {profile['global_avg_payment_reach']:.1f}%)")
-        
-        # REVISED SCORING - PRIORITIZE BUSINESS VALUE
-        segment_scores = {
-            'High-Value Loyalists': 0,      # High value, high loyalty, low abandonment
-            'At-Risk Converters': 0,        # High value, high abandonment, needs conversion  
-            'Engaged Researchers': 0,       # Medium value, high engagement, research behavior
-            'Price-Sensitive Shoppers': 0,  # Low value, high discount sensitivity
-            'Casual Browsers': 0           # Low everything, minimal engagement
-        }
-        
-        # HIGH-VALUE LOYALISTS: High value + low abandonment + high loyalty
-        if rel_cart_value > 0.1: segment_scores['High-Value Loyalists'] += 3
-        if rel_abandonment < -10: segment_scores['High-Value Loyalists'] += 3
-        if rel_return_rate > 15: segment_scores['High-Value Loyalists'] += 2
-        if rel_payment_reach > 15: segment_scores['High-Value Loyalists'] += 2
-        
-        # AT-RISK CONVERTERS: High value + high abandonment (MAIN FIX)
-        if rel_cart_value > 0.1: segment_scores['At-Risk Converters'] += 4  # Higher weight for high value
-        if rel_abandonment > 10: segment_scores['At-Risk Converters'] += 3  # High abandonment
-        if rel_return_rate > 5: segment_scores['At-Risk Converters'] += 2   # Returning but abandoning
-        if rel_payment_reach < 0: segment_scores['At-Risk Converters'] += 1 # Didn't reach payment
-        
-        # ENGAGED RESEARCHERS: High engagement + research behavior
-        if rel_engagement > 0.3: segment_scores['Engaged Researchers'] += 3
-        if profile['avg_pages_viewed'] > profile['global_avg_pages_viewed'] * 1.5: segment_scores['Engaged Researchers'] += 2
-        if profile['shipping_info_view_rate'] > 60: segment_scores['Engaged Researchers'] += 2
-        if abs(rel_cart_value) < 0.05: segment_scores['Engaged Researchers'] += 1  # Medium value
-        
-        # PRICE-SENSITIVE SHOPPERS: High discount sensitivity
-        if profile['discount_sensitivity'] > 50: segment_scores['Price-Sensitive Shoppers'] += 3
-        if rel_cart_value < -0.05: segment_scores['Price-Sensitive Shoppers'] += 2
-        if rel_abandonment > 5: segment_scores['Price-Sensitive Shoppers'] += 1
-        
-        # CASUAL BROWSERS: Low engagement across all metrics
-        if rel_engagement < -0.2: segment_scores['Casual Browsers'] += 3
-        if rel_cart_value < -0.1: segment_scores['Casual Browsers'] += 2
-        if rel_payment_reach < -20: segment_scores['Casual Browsers'] += 2
-        if profile['avg_session_duration'] < profile['global_avg_items']: segment_scores['Casual Browsers'] += 1
-        
-        print(f"📊 Segment Scores: {segment_scores}")
-        
-        # Get the highest scoring segment
-        best_segment = max(segment_scores, key=segment_scores.get)
-        best_score = segment_scores[best_segment]
-        
-        # FORCE At-Risk Converters for high-value abandoners (BUSINESS LOGIC OVERRIDE)
-        if (rel_cart_value > 0.15 and rel_abandonment > 15 and best_segment != 'At-Risk Converters'):
-            print(f"🔄 OVERRIDE: High-value abandover -> At-Risk Converters")
-            best_segment = 'At-Risk Converters'
-        
-        # Fallback for low scores
-        if best_score < 3:
-            best_segment = self._simplified_segment_fallback(profile)
-        
-        print(f"🎯 FINAL SEGMENT: {best_segment} (score: {best_score})")
-        
-        segment_info = {
-            'segment_name': best_segment,
-            'description': self._get_segment_description(best_segment),
-            'recovery_priority': self._get_segment_priority(best_segment, profile),
-            'business_value': self._get_business_value(best_segment),
-            'recovery_priority_score': self._calculate_enhanced_priority(profile),
-            'segment_score': best_score
-        }
-        
-        return segment_info
-    
-    def _simplified_segment_fallback(self, profile):
-        """Simplified fallback logic for 5 segments"""
-        # Check loyalty and value first
-        if profile['return_user_rate'] > 50:
-            if profile['avg_cart_value'] > profile['global_avg_cart_value']:
-                return "High-Value Loyalists"
-            else:
-                return "Price-Sensitive Shoppers"  # Loyal but price sensitive
-        
-        # Check high value but new
-        if profile['avg_cart_value'] > profile['global_avg_cart_value']:
-            return "At-Risk Converters"
-        
-        # Check high engagement
-        if profile['avg_engagement'] > profile['global_avg_engagement']:
-            return "Engaged Researchers"
-        
-        # Check discount sensitivity
-        if profile['discount_sensitivity'] > 40:
-            return "Price-Sensitive Shoppers"
-        
-        # Default to casual browsers
-        return "Casual Browsers"
     
     def _get_segment_description(self, segment_name):
         """Get segment descriptions for 5 core segments"""
         descriptions = {
             "High-Value Loyalists": "Frequent high-spending customers with low abandonment rates",
-            "At-Risk Converters": "High-value new customers who need conversion encouragement",
+            "At-Risk Converters": "High-value new customers who need conversion encouragement", 
             "Engaged Researchers": "Highly engaged users researching products before purchase",
             "Price-Sensitive Shoppers": "Customers highly responsive to discounts and promotions",
             "Casual Browsers": "Low-engagement users exploring with minimal intent"
         }
         return descriptions.get(segment_name, "Users with typical shopping behavior")
     
-    def _get_segment_priority(self, segment_name, profile):
-        """Get recovery priority based on 5 segments"""
+    def _get_aggregate_priority(self, segment_name, segment_data):
+        """Get recovery priority for segment aggregate"""
         base_priority = {
             "At-Risk Converters": "Very High",
             "Engaged Researchers": "High",
             "Price-Sensitive Shoppers": "Medium",
-            "High-Value Loyalists": "Low", 
+            "High-Value Loyalists": "Low",
             "Casual Browsers": "Low"
         }
         
         priority = base_priority.get(segment_name, "Medium")
         
-        # Adjust based on actual abandonment rate
-        if profile['abandonment_rate'] > 70:
+        # Adjust based on aggregate abandonment rate
+        abandonment_rate = segment_data['abandoned'].mean() * 100
+        if abandonment_rate > 70:
             priority = "Very High"
-        elif profile['abandonment_rate'] > 50 and priority == "Medium":
+        elif abandonment_rate > 50 and priority == "Medium":
             priority = "High"
             
         return priority
@@ -387,161 +282,160 @@ class EnhancedCustomerSegmenter:
         """Get business value rating for 5 segments"""
         value_map = {
             "High-Value Loyalists": "Very High",
-            "At-Risk Converters": "High",
+            "At-Risk Converters": "High", 
             "Engaged Researchers": "Medium-High",
             "Price-Sensitive Shoppers": "Medium",
             "Casual Browsers": "Low"
         }
         return value_map.get(segment_name, "Medium")
     
-    def _calculate_enhanced_priority(self, profile):
-        """Enhanced priority scoring - FIXED"""
+    def _calculate_aggregate_priority_score(self, segment_data):
+        """Calculate priority score for segment aggregate - CORRECTED"""
         weights = {
             'abandonment_rate': 0.35,
-            'avg_cart_value': 0.20,
-            'return_user_rate': 0.15,
+            'avg_cart_value': 0.25,
+            'return_user_rate': 0.15, 
             'payment_reach_rate': 0.15,
-            'avg_engagement': 0.10,
-            'discount_sensitivity': 0.05
+            'avg_engagement': 0.10
         }
         
-        abandonment_score = min(profile['abandonment_rate'] / 100, 1.0)
+        abandonment_score = segment_data['abandoned'].mean() * 100
         
-        cart_range = profile['global_max_cart_value'] - profile['global_min_cart_value']
-        cart_value_score = (profile['avg_cart_value'] - profile['global_min_cart_value']) / cart_range
+        # Scale cart value appropriately based on data type
+        if self.use_normalized_data:
+            cart_value_score = segment_data['cart_value'].mean() * 100  # 0-1 -> 0-100
+            engagement_score = segment_data['engagement_score'].mean() * 100  # 0-1 -> 0-100
+        else:
+            # For actual values, scale cart value to reasonable range
+            max_reasonable_cart = 10000  # Assume ₹10,000 as max reasonable cart
+            cart_value_score = min(segment_data['cart_value'].mean() / max_reasonable_cart * 100, 100)
+            engagement_score = segment_data['engagement_score'].mean() * 10  # 0-10 -> 0-100
         
-        return_user_score = profile['return_user_rate'] / 100
-        payment_score = profile['payment_reach_rate'] / 100
-        
-        engagement_score = (profile['avg_engagement'] + 1) / 2 if profile['avg_engagement'] >= -1 else 0
-        discount_score = profile['discount_sensitivity'] / 100
+        return_user_score = segment_data['return_user'].mean() * 100
+        payment_score = segment_data['if_payment_page_reached'].mean() * 100
         
         priority_score = (
             weights['abandonment_rate'] * abandonment_score +
             weights['avg_cart_value'] * cart_value_score +
             weights['return_user_rate'] * return_user_score +
             weights['payment_reach_rate'] * payment_score +
-            weights['avg_engagement'] * engagement_score +
-            weights['discount_sensitivity'] * discount_score
+            weights['avg_engagement'] * engagement_score
         )
         
-        return min(int(priority_score * 100), 100)
+        return min(int(priority_score), 100)
+
+def analyze_segmentation_quality(df_segmented):
+    """Analyze if segmentation makes sense"""
+    print("\n" + "="*60)
+    print("🔍 SEGMENTATION QUALITY ANALYSIS")
+    print("="*60)
     
-    def fit(self, df):
-        """Perform enhanced customer segmentation"""
-        try:
-            # Use engineered features
-            features_df = self._engineer_segmentation_features(df)
-            self.feature_columns = features_df.columns.tolist()
-            
-            X = features_df.values
-            
-            # Scale features
-            X_scaled = self.scaler.fit_transform(X)
-            
-            # Perform K-means clustering
-            self.kmeans = KMeans(n_clusters=self.n_segments, random_state=42, n_init=10)
-            labels = self.kmeans.fit_predict(X_scaled)
-            
-            # Create enhanced segment profiles
-            self.segment_profiles = self._create_enhanced_segments(df, labels)
-            
-            print("🎯 Enhanced segmentation completed!")
-            return self
-            
-        except Exception as e:
-            print(f"❌ Error in segmentation: {e}")
-            raise
+    # Check segment distribution
+    segment_counts = df_segmented['segment'].value_counts()
+    print(f"\n📊 Segment Distribution:")
+    for segment, count in segment_counts.items():
+        percentage = (count / len(df_segmented)) * 100
+        print(f"   {segment}: {count} users ({percentage:.1f}%)")
     
-    def predict_segment(self, df):
-        """Predict segments for new data"""
-        if not hasattr(self, 'feature_columns') or not self.feature_columns:
-            raise ValueError("Segmenter must be fitted before prediction")
+    # Analyze key metrics by segment
+    print(f"\n📈 Key Metrics by Segment:")
+    metrics_by_segment = df_segmented.groupby('segment').agg({
+        'cart_value': ['mean', 'std'],
+        'engagement_score': ['mean', 'std'],
+        'abandoned': 'mean',
+        'return_user': 'mean',
+        'if_payment_page_reached': 'mean',
+        'num_pages_viewed': 'mean',
+        'num_items_carted': 'mean'
+    }).round(2)
+    
+    print(metrics_by_segment)
+    
+    # Check if segments make business sense
+    print(f"\n✅ Business Logic Validation:")
+    for segment in df_segmented['segment'].unique():
+        segment_data = df_segmented[df_segmented['segment'] == segment]
         
-        # Use the same feature engineering as during fit
-        features_df = self._engineer_segmentation_features(df)
+        avg_cart = segment_data['cart_value'].mean()
+        avg_abandonment = segment_data['abandoned'].mean() * 100
+        avg_return = segment_data['return_user'].mean() * 100
+        avg_payment_reach = segment_data['if_payment_page_reached'].mean() * 100
         
-        # Ensure we have the same columns as during training
-        missing_cols = set(self.feature_columns) - set(features_df.columns)
-        if missing_cols:
-            raise ValueError(f"Missing features for prediction: {missing_cols}")
+        print(f"\n🎯 {segment}:")
+        print(f"   Avg Cart: ₹{avg_cart:.2f}")
+        print(f"   Abandonment: {avg_abandonment:.1f}%")
+        print(f"   Return Users: {avg_return:.1f}%")
+        print(f"   Payment Reach: {avg_payment_reach:.1f}%")
         
-        X = features_df[self.feature_columns].values
-        X_scaled = self.scaler.transform(X)
-        return self.kmeans.predict(X_scaled)
+        # Business logic validation
+        if segment == "High-Value Loyalists":
+            if avg_return > 50 and avg_abandonment < 30 and avg_payment_reach > 80:
+                print("   ✅ Valid: High return, low abandonment, high payment completion")
+            else:
+                print("   ⚠️ Check: Should have high return, low abandonment")
+                
+        elif segment == "At-Risk Converters":
+            if avg_return < 50 and avg_abandonment > 50 and avg_payment_reach < 50:
+                print("   ✅ Valid: Low return, high abandonment, low payment reach")
+            else:
+                print("   ⚠️ Check: Should have low return, high abandonment")
+
 def main():
-    """Enhanced segmentation with normalized data + rule-based fallback"""
+    """Rule-based segmentation main function - CORRECTED"""
     try:
-        # Get the correct paths
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(os.path.dirname(current_dir))
-        
-        # Load featured dataset
-        featured_path = os.path.join(project_root, 'data', 'cart_abandonment_featured.csv')
+        # Load your actual data
+        df = pd.read_csv('your_data.csv')  # Replace with your actual file path
         
         print("=== Loading Dataset ===")
-        print(f"Featured data: {featured_path}")
-        
-        if not os.path.exists(featured_path):
-            print("❌ Featured dataset not found!")
-            return
-        
-        df = pd.read_csv(featured_path)
         print(f"✅ Raw dataset loaded: {df.shape}")
-        print(f"📊 Raw data ranges:")
-        print(f"   - Engagement: {df['engagement_score'].min():.1f} to {df['engagement_score'].max():.1f}")
-        print(f"   - Cart Value: {df['cart_value'].min():.1f} to {df['cart_value'].max():.1f}")
-        print(f"   - Session Duration: {df['session_duration'].min():.1f} to {df['session_duration'].max():.1f}")
         
-        # NORMALIZE THE DATA
-        print("\n🔄 Normalizing data for segmentation...")
-        df_normalized = normalize_customer_data(df)
+        # FIRST: Analyze data type
+        is_normalized = analyze_data_type(df)
         
-        print(f"📊 Normalized data ranges:")
-        print(f"   - Engagement: {df_normalized['engagement_score'].min():.3f} to {df_normalized['engagement_score'].max():.3f}")
-        print(f"   - Cart Value: {df_normalized['cart_value'].min():.3f} to {df_normalized['cart_value'].max():.3f}")
-        print(f"   - Session Duration: {df_normalized['session_duration'].min():.3f} to {df_normalized['session_duration'].max():.3f}")
+        print(f"\n📊 Data summary:")
+        print(f"   - Cart Value: {df['cart_value'].min():.2f} to {df['cart_value'].max():.2f}")
+        print(f"   - Engagement: {df['engagement_score'].min():.2f} to {df['engagement_score'].max():.2f}")
+        print(f"   - Abandonment Rate: {df['abandoned'].mean() * 100:.1f}%")
+        print(f"   - Return Users: {df['return_user'].mean() * 100:.1f}%")
+        print(f"   - Payment Reach: {df['if_payment_page_reached'].mean() * 100:.1f}%")
         
-        print("\n🔄 Performing Enhanced Customer Segmentation (5 Segments)...")
-        segmenter = EnhancedCustomerSegmenter(n_segments=5)
+        # Initialize segmenter with correct data type
+        segmenter = RuleBasedCustomerSegmenter(use_normalized_data=is_normalized)
         
-        # ✅ Use hybrid segmentation logic
-        if len(df_normalized) == 1:
-            print("⚙️ Single data record detected → Switching to rule-based segmentation")
-            segment_name = segment_input_data(segmenter, df_normalized)
-            df['segment'] = segment_name
-            print(f"\n🎯 Assigned Segment: {segment_name[0]}")
-        else:
-            print("⚙️ Multiple data records detected → Running ML-based segmentation")
-            segmenter.fit(df_normalized)
-            df['segment'] = segmenter.predict_segment(df_normalized)
-            
-            print("\n" + "="*60)
-            print("📊 SIMPLIFIED 5-SEGMENT CUSTOMER ANALYSIS")
-            print("="*60)
-            
-            # Display enhanced segment analysis
-            for segment_id, profile in segmenter.segment_profiles.items():
-                print(f"\n🎯 Segment {segment_id}: {profile['segment_name']}")
-                print(f"   📈 Size: {profile['size']} users ({profile['size_percentage']:.1f}%)")
-                print(f"   💰 Avg Cart Value: {profile['avg_cart_value']:.3f} (normalized)")
-                print(f"   🚫 Abandonment Rate: {profile['abandonment_rate']:.1f}%")
-                print(f"   🔄 Return User Rate: {profile['return_user_rate']:.1f}%")
-                print(f"   💳 Payment Reach Rate: {profile['payment_reach_rate']:.1f}%")
-                print(f"   ⭐ Recovery Priority: {profile['recovery_priority']} ({profile['recovery_priority_score']}/100)")
-                print(f"   📝 Description: {profile['description']}")
-                print(f"   💼 Business Value: {profile['business_value']}")
+        # PERFORM RULE-BASED SEGMENTATION
+        print("\n🔄 Performing Rule-Based Customer Segmentation (5 Segments)...")
         
-        # ✅ Save output if needed
-        output_path = os.path.join(project_root, 'data', 'segmented_output.csv')
-        df.to_csv(output_path, index=False)
-        print(f"\n💾 Segmentation results saved to: {output_path}")
+        # Segment the entire dataset
+        df_segmented = segmenter.segment_dataset(df)
+        
+        # Display results
+        print("\n" + "="*60)
+        print("📊 RULE-BASED 5-SEGMENT CUSTOMER ANALYSIS")
+        print("="*60)
+        
+        for segment_name, profile in segmenter.segment_profiles.items():
+            print(f"\n🎯 Segment: {segment_name}")
+            print(f"   📈 Size: {profile['size']} users ({profile['size_percentage']:.1f}%)")
+            print(f"   💰 Avg Cart Value: ₹{profile['avg_cart_value']:.2f}")
+            print(f"   🚫 Abandonment Rate: {profile['abandonment_rate']:.1f}%")
+            print(f"   🔄 Return User Rate: {profile['return_user_rate']:.1f}%")
+            print(f"   💳 Payment Reach Rate: {profile['payment_reach_rate']:.1f}%")
+            print(f"   ⭐ Recovery Priority: {profile['recovery_priority']} ({profile['recovery_priority_score']}/100)")
+            print(f"   📝 Description: {profile['description']}")
+            print(f"   💼 Business Value: {profile['business_value']}")
+        
+        # Analyze segmentation quality
+        analyze_segmentation_quality(df_segmented)
+        
+        # Save output
+        output_path = 'rule_based_segmented_output.csv'
+        df_segmented.to_csv(output_path, index=False)
+        print(f"\n💾 Rule-based segmentation results saved to: {output_path}")
 
     except Exception as e:
         print(f"❌ Error in main execution: {e}")
         import traceback
         traceback.print_exc()
-
 
 if __name__ == "__main__":
     main()
