@@ -9,7 +9,7 @@ import os
 import sys
 from pathlib import Path
 import json
-from analytics_helper import AnalyticsHelper
+from analytics_helper import run_analytics_dashboard
 
 # Import custom styles
 from custom_styles import (
@@ -589,187 +589,11 @@ class SegmentAnalysisTab(BaseTab):
 class AdvancedAnalyticsTab(BaseTab):
     def __init__(self):
         super().__init__("📈 Analytics")
-        self.analytics_helper = AnalyticsHelper()
 
     def run(self):
-        self.create_header("Advanced Analytics", "Deep Dive Analysis & Insights", "📈")
+        """Run the analytics tab using the standalone function"""
+        run_analytics_dashboard()
         
-        # Load sample data or use provided data
-        df = self.load_sample_data()
-        
-        if df is not None:
-            self.create_analytics_dashboard(df)
-        else:
-            st.warning("No data available for analytics. Using demo mode.")
-            self.create_demo_analytics()
-
-    def create_header(self, title, description, icon):
-        """Create header for the analytics section"""
-        st.markdown(f"# {icon} {title}")
-        st.markdown(f"**{description}**")
-        st.markdown("---")
-
-    def load_sample_data(self):
-        """Load sample data for analytics"""
-        try:
-            # Try to load from your data directory
-            data_files = [f for f in os.listdir('data') if f.endswith('.csv')]
-            if data_files:
-                # Try to load the main dataset first
-                if 'cart_abandonment_dataset.csv' in data_files:
-                    df = pd.read_csv(os.path.join('data', 'cart_abandonment_dataset.csv'))
-                else:
-                    df = pd.read_csv(os.path.join('data', data_files[0]))
-                return df
-        except Exception as e:
-            st.error(f"Error loading data: {e}")
-        return None
-
-    def create_analytics_dashboard(self, df):
-        """Create comprehensive analytics dashboard"""
-        
-        # Tab layout for different analytics views
-        tab1, tab2, tab3, tab4 = st.tabs([
-            "📊 Overview", "🔍 Behavioral Patterns", 
-            "⏰ Time Analysis", "📈 Performance"
-        ])
-        
-        with tab1:
-            self.create_overview_tab(df)
-        
-        with tab2:
-            self.create_behavioral_analysis_tab(df)
-        
-        with tab3:
-            self.create_time_analysis_tab(df)
-        
-        with tab4:
-            self.create_performance_tab(df)
-
-    def create_overview_tab(self, df):
-        """Create overview analytics tab"""
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # Abandonment trend
-            st.subheader("Abandonment Trend")
-            trend_fig = self.analytics_helper.create_abandonment_trend_chart(df)
-            st.plotly_chart(trend_fig, use_container_width=True)
-            
-            # Business impact
-            st.subheader("Business Impact Analysis")
-            impact_metrics = self.analytics_helper.calculate_business_impact(df)
-            for metric, value in impact_metrics.items():
-                st.metric(metric.replace('_', ' ').title(), value)
-
-        with col2:
-            # Feature correlations
-            st.subheader("Feature Correlations")
-            numerical_features = df.select_dtypes(include=[np.number]).columns.tolist()
-            corr_fig = self.analytics_helper.create_correlation_heatmap(df, numerical_features)
-            st.plotly_chart(corr_fig, use_container_width=True)
-            
-            # Automated insights
-            st.subheader("Key Insights")
-            insights = self.analytics_helper.generate_insights_report(df)
-            for insight in insights:
-                st.info(insight)
-
-    def create_behavioral_analysis_tab(self, df):
-        """Create behavioral patterns analysis tab"""
-        col1, col2 = st.columns([2, 1])
-        
-        with col1:
-            st.subheader("Behavioral Patterns")
-            behavioral_features = ['session_duration', 'num_pages_viewed', 'scroll_depth', 'num_items_carted']
-            # Only use features that exist in the dataframe
-            available_features = [f for f in behavioral_features if f in df.columns]
-            behavior_fig = self.analytics_helper.create_behavioral_patterns_chart(df, available_features)
-            if behavior_fig:
-                st.plotly_chart(behavior_fig, use_container_width=True)
-            else:
-                st.info("Not enough behavioral features available for analysis")
-        
-        with col2:
-            st.subheader("Segment Analysis")
-            # Example segmentation
-            segments_data = pd.DataFrame({
-                'Segment': ['High Risk', 'Medium Risk', 'Low Risk', 'Loyal'],
-                'Size': [25, 35, 20, 20],
-                'Abandonment_Rate': [75, 45, 15, 5]
-            })
-            
-            # CORRECTED: Use color_discrete_sequence instead of color_continuous_scale for pie charts
-            segment_fig = px.pie(
-                segments_data,
-                values='Size',
-                names='Segment',
-                title="Customer Segments",
-                color='Segment',  # Use Segment for coloring
-                color_discrete_sequence=px.colors.sequential.RdYlGn_r  # Use discrete color sequence
-            )
-            st.plotly_chart(segment_fig, use_container_width=True)
-
-    def create_time_analysis_tab(self, df):
-        """Create time-based analysis tab"""
-        st.subheader("Time-Based Patterns")
-        
-        if 'timestamp' in df.columns and 'abandoned' in df.columns:
-            time_fig = self.analytics_helper.create_time_based_analysis(df, 'timestamp', 'abandoned')
-            if time_fig:
-                st.plotly_chart(time_fig, use_container_width=True)
-            else:
-                st.info("Could not generate time-based analysis")
-        else:
-            st.info("Time-based analysis requires 'timestamp' and 'abandoned' columns")
-
-    def create_performance_tab(self, df):
-        """Create model performance tab"""
-        st.subheader("Model Performance")
-        
-        # This would integrate with your actual model
-        st.info("""
-        **Performance metrics would include:**
-        - Model accuracy and precision
-        - Feature importance analysis
-        - Confusion matrix
-        - ROC curves
-        - Cross-validation results
-        """)
-        
-        # Demo feature importance
-        st.subheader("Feature Importance (Demo)")
-        demo_features = ['session_duration', 'num_pages_viewed', 'cart_value', 'return_user']
-        demo_importance = np.random.uniform(0, 1, len(demo_features))
-        
-        fig = px.bar(
-            x=demo_importance,
-            y=demo_features,
-            orientation='h',
-            title="Demo Feature Importance",
-            color=demo_importance,
-            color_continuous_scale='Viridis'
-        )
-        st.plotly_chart(fig, use_container_width=True)
-
-    def create_demo_analytics(self):
-        """Create demo analytics when no real data is available"""
-        st.info("📊 Showing demo analytics with sample data")
-        
-        # Generate sample data
-        np.random.seed(42)
-        demo_data = pd.DataFrame({
-            'timestamp': pd.date_range('2024-01-01', periods=1000, freq='H'),
-            'session_duration': np.random.exponential(300, 1000),
-            'num_pages_viewed': np.random.poisson(8, 1000),
-            'cart_value': np.random.lognormal(5, 1, 1000),
-            'abandoned': np.random.choice([0, 1], 1000, p=[0.7, 0.3]),
-            'device_type': np.random.choice(['Mobile', 'Desktop', 'Tablet'], 1000),
-            'return_user': np.random.choice([0, 1], 1000, p=[0.6, 0.4])
-        })
-        
-        self.create_analytics_dashboard(demo_data)
-
 class AdminDashboard:
     def __init__(self):
         self.tabs = [

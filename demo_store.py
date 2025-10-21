@@ -117,28 +117,20 @@ class DirectRuleBasedSegmenter:
                 engagement_score >= 6 and 
                 abandoned == 0):
                 return "High-Value Loyalists"
-            
-            # Rule 2: At-Risk Converters  
             elif (abandoned == 1 and 
                   cart_value > 20000 and 
                   payment_reached == 0 and
                   engagement_score >= 5):
                 return "At-Risk Converters"
-            
-            # Rule 3: Engaged Researchers
             elif (engagement_score >= 7 and 
                   session_duration >= 60 and 
                   num_items_carted > 0 and
                   abandoned == 1):
                 return "Engaged Researchers"
-            
-            # Rule 4: Price-Sensitive Shoppers
             elif (discount_applied == 1 or 
                   cart_value < 400 or
                   (abandoned == 1 and cart_value < 450)):
                 return "Price-Sensitive Shoppers"
-            
-            # Rule 5: Casual Browsers (default)
             else:
                 return "Casual Browsers"
                 
@@ -149,9 +141,7 @@ class DirectRuleBasedSegmenter:
 # ============================================================================
 # RECOVERY STRATEGY MANAGER
 # ============================================================================
-
 class RecoveryStrategyManager:
-    """Manages recovery strategies based on customer segments"""
     
     def __init__(self):
         self.segment_strategies = {
@@ -159,23 +149,25 @@ class RecoveryStrategyManager:
                 "priority": "Low",
                 "strategies": [
                     "💎 VIP early access to new products",
-                    "🎫 Double loyalty points campaign",
+                    "🎫 Double loyalty points campaign", 
                     "📧 Regular updates about products matching their preferences",
                     "🎁 Surprise free shipping or small gifts on next purchase"
                 ],
-                "timing": "24-48 hours after visit",
-                "channel": "Email + Mobile App Notification"
+                "channel": "Email + Mobile App Notification",
+                "loyalty_points_multiplier": 2.0,
+                "complementary_products": ["Phone Case", "Screen Protector", "Wireless Earbuds"]
             },
             "At-Risk Converters": {
                 "priority": "Very High",
                 "strategies": [
                     "🔥 Limited-time discount (10-15%) on abandoned items",
                     "🚀 Personal executive email follow-up",
-                    "📞 Personal shopping assistant offer",
+                    "📞 Personal shopping assistant offer", 
                     "⏰ Stock availability alerts for items in cart"
                 ],
-                "timing": "2-6 hours after abandonment",
-                "channel": "Email + SMS + Push Notification"
+                "channel": "Email + SMS + Push Notification",
+                "discount_range": (10, 15),
+                "stock_alert_threshold": 5
             },
             "Engaged Researchers": {
                 "priority": "High", 
@@ -185,8 +177,9 @@ class RecoveryStrategyManager:
                     "💬 Live chat support promotion",
                     "🔍 Advanced product comparison tools"
                 ],
-                "timing": "12-24 hours after visit",
-                "channel": "Email + Retargeting Ads"
+                "channel": "Email + Retargeting Ads",
+                "expert_consultation": True,
+                "demo_videos": True
             },
             "Price-Sensitive Shoppers": {
                 "priority": "Medium",
@@ -196,21 +189,27 @@ class RecoveryStrategyManager:
                     "📦 Free shipping threshold reduction",
                     "🔄 Price drop alerts for watched items"
                 ],
-                "timing": "6-12 hours after abandonment", 
-                "channel": "Email + Browser Push"
+                "channel": "Email + Browser Push",
+                "free_shipping_threshold": 150,
+                "tiered_discounts": {
+                    "500": 5,
+                    "1000": 10, 
+                    "2000": 15
+                }
             },
             "Casual Browsers": {
                 "priority": "Low",
                 "strategies": [
                     "🌐 Personalized product recommendations",
-                    "📢 New arrival notifications",
+                    "📢 New arrival notifications", 
                     "🏆 Social proof and trending products",
                     "🔔 Re-engagement campaign after 7 days"
                 ],
-                "timing": "48-72 hours after visit",
-                "channel": "Email only"
+                "channel": "Email only",
+                "reengagement_days": 7
             }
         }
+        self.applied_strategies = {}
     
     def get_recovery_strategy(self, segment_name, user_data=None):
         """Get recovery strategy for specific segment"""
@@ -233,6 +232,128 @@ class RecoveryStrategyManager:
             "channel": segment_info["channel"],
             "user_context": user_data
         }
+    
+    def apply_high_value_loyalist_actions(self, session_data):
+        actions = []
+        base_points = int(session_data['cart_value'] / 100)  # 1 point per ₹100
+        bonus_points = base_points * 2
+        actions.append(f"🎫 Loyalty points doubled! Earned {bonus_points} points (normally {base_points})")
+        complementary_product = np.random.choice(self.segment_strategies["High-Value Loyalists"]["complementary_products"])
+        actions.append(f"🎁 Free complementary {complementary_product} added to your order!")
+        actions.append("🚚 Free express shipping applied to your order")
+        return actions
+    
+    def apply_at_risk_converter_actions(self, session_data):
+        actions = []
+        discount_pct = np.random.randint(10, 16)  # 10-15% discount
+        original_total = session_data['cart_value']
+        discount_amount = original_total * (discount_pct / 100)
+        new_total = original_total - discount_amount
+        
+        actions.append(f"🔥 Limited-time {discount_pct}% discount applied! Saved ₹{discount_amount:.2f}")
+        actions.append(f"💰 New total: ₹{new_total:.2f} (was ₹{original_total:.2f})")
+        
+        low_stock_items = []
+        for item in session_data['items'][:2]: 
+            if np.random.random() < 0.3: 
+                low_stock_items.append(item['name'])
+        
+        if low_stock_items:
+            items_list = ", ".join(low_stock_items)
+            actions.append(f"⏰ Low stock alert: {items_list} - Only {np.random.randint(1, 6)} left!")
+        actions.append("👨‍💼 Personal shopping assistant assigned -他们会联系您 within 1 hour")
+        
+        return actions
+    
+    def apply_engaged_researcher_actions(self, session_data):
+        actions = []
+        actions.append("📚 Product expert consultation scheduled -他们会联系您 tomorrow")
+        
+        if session_data['viewed_products']:
+            demo_product = session_data['viewed_products'][0]['name']
+            actions.append(f"🎥 Detailed demo video available for {demo_product} - Check your email")
+        actions.append("💬 Priority live chat support activated - Get instant help")
+        
+        return actions
+    
+    def apply_price_sensitive_shopper_actions(self, session_data):
+        """Apply practical actions for Price-Sensitive Shoppers"""
+        actions = []
+        
+        cart_value = session_data['cart_value']
+        
+        # 1. Tiered discounts based on cart value
+        tiered_discounts = self.segment_strategies["Price-Sensitive Shoppers"]["tiered_discounts"]
+        applied_discount = 0
+        
+        for threshold, discount in sorted(tiered_discounts.items()):
+            if cart_value >= float(threshold):
+                applied_discount = discount
+        
+        if applied_discount > 0:
+            discount_amount = cart_value * (applied_discount / 100)
+            actions.append(f"💰 Tiered discount: {applied_discount}% off for cart above ₹{list(tiered_discounts.keys())[list(tiered_discounts.values()).index(applied_discount)]}")
+            actions.append(f"💸 Save ₹{discount_amount:.2f} on this order!")        
+        new_threshold = self.segment_strategies["Price-Sensitive Shoppers"]["free_shipping_threshold"]
+        if cart_value < new_threshold:
+            remaining = new_threshold - cart_value
+            actions.append(f"📦 Free shipping at ₹{new_threshold} (normally ₹200) - Add ₹{remaining:.2f} more!")
+        else:
+            actions.append("📦 Free shipping applied! (Special lowered threshold)")
+        actions.append(f"🎟️ Extra promo for next order: SAVE20, WELCOME - Save 15-20%")
+        
+        return actions
+    
+    def apply_casual_browser_actions(self, session_data):
+        """Apply practical actions for Casual Browsers"""
+        actions = []
+        
+        # 1. Personalized recommendations based on viewed items
+        if session_data['viewed_products']:
+            viewed_categories = list(set([p['category'] for p in session_data['viewed_products']]))
+            if viewed_categories:
+                actions.append(f"🌐 Personalized recommendations for {viewed_categories[0]} category coming to your email")
+        
+        # 2. Social proof notifications
+        trending_products = np.random.choice([p['name'] for p in PRODUCTS], size=2, replace=False)
+        actions.append(f"🏆 Trending now: {', '.join(trending_products)}")
+        
+        # 3. Re-engagement reminder
+        reengage_days = self.segment_strategies["Casual Browsers"]["reengagement_days"]
+        actions.append(f"🔔 We'll remind you in {reengage_days} days about products you liked")
+        
+        return actions
+    
+    def execute_segment_actions(self, segment_name, session_data):
+        """Execute practical actions for the given segment"""
+        session_id = session_data['session_id']
+        
+        if session_id not in self.applied_strategies:
+            self.applied_strategies[session_id] = {}
+        
+        actions = []
+        
+        if segment_name == "High-Value Loyalists":
+            actions = self.apply_high_value_loyalist_actions(session_data)
+        elif segment_name == "At-Risk Converters":
+            actions = self.apply_at_risk_converter_actions(session_data)
+        elif segment_name == "Engaged Researchers":
+            actions = self.apply_engaged_researcher_actions(session_data)
+        elif segment_name == "Price-Sensitive Shoppers":
+            actions = self.apply_price_sensitive_shopper_actions(session_data)
+        elif segment_name == "Casual Browsers":
+            actions = self.apply_casual_browser_actions(session_data)
+        else:
+            actions = ["📧 Standard follow-up email will be sent in 24 hours"]
+        
+        # Store applied actions
+        self.applied_strategies[session_id] = {
+            'segment': segment_name,
+            'actions': actions,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        return actions
 
 class AprioriRecommender:
     def __init__(self):
@@ -260,7 +381,6 @@ class AprioriRecommender:
             ({"Coffee Maker", "Desk Lamp"}, {"Coffee Beans", "Water Bottle", "Kitchen Utensils", "Face Mask"}, 0.42)
         ]
     def get_recommendations(self, current_items, top_n=4):
-        """Get recommendations based on current cart items"""
         recommendations = set()
         current_item_names = {item['name'] for item in current_items}
         
@@ -269,7 +389,7 @@ class AprioriRecommender:
             if antecedent.issubset(current_item_names):
                 recommendations.update(consequent - current_item_names)
         
-        # Strategy 2: Category-based recommendations (fallback)
+        # Strategy 2: Category-based recommendations 
         if not recommendations and current_items:
             current_categories = {item['category'] for item in current_items}
             category_products = [
@@ -277,11 +397,10 @@ class AprioriRecommender:
                 if p['category'] in current_categories 
                 and p['name'] not in current_item_names
             ]
-            # Add 2 category-based recommendations
             for product in category_products[:2]:
                 recommendations.add(product['name'])
         
-        # Strategy 3: Popular products (final fallback)
+        # Strategy 3: Popular products 
         if not recommendations:
             popular_products = ["Phone Case", "Wireless Earbuds", "Backpack", "Water Bottle"]
             for product_name in popular_products:
@@ -290,7 +409,6 @@ class AprioriRecommender:
                     if len(recommendations) >= top_n:
                         break
         
-        # Convert back to product objects
         recommended_products = []
         for product_name in list(recommendations)[:top_n]:
             if product_name in self.product_dict:
@@ -299,18 +417,14 @@ class AprioriRecommender:
         return recommended_products
     
     def get_frequently_bought_together(self, product, top_n=3):
-        """Special method for 'Frequently Bought Together' section"""
         product_name = product['name']
         recommendations = set()
         
-        # Find rules where this product is in the antecedent
         for antecedent, consequent, confidence in self.rules:
             if product_name in antecedent:
-                # Get other products from this rule (excluding the current product)
                 other_products = consequent - {product_name}
                 recommendations.update(other_products)
-        
-        # If no specific rules found, use category-based fallback
+    
         if not recommendations:
             same_category = [
                 p for p in PRODUCTS 
@@ -320,7 +434,6 @@ class AprioriRecommender:
             for p in same_category[:top_n]:
                 recommendations.add(p['name'])
         
-        # Convert to product objects
         result_products = []
         for product_name in list(recommendations)[:top_n]:
             if product_name in self.product_dict:
@@ -371,7 +484,6 @@ if 'promo_message' not in st.session_state:
 if 'recommender' not in st.session_state:
     st.session_state.recommender = AprioriRecommender()
 
-# Initialize direct segmenter and recovery manager
 st.session_state.segmenter = DirectRuleBasedSegmenter()
 recovery_manager = RecoveryStrategyManager()
 
@@ -650,7 +762,6 @@ def save_session_data(abandoned, segment=None):
     return csv_file
 
 def start_new_session():
-    """Start fresh session"""
     st.session_state.session_data = {
         'session_id': f"S{int(time.time())}",
         'user_id': f"U{np.random.randint(1000, 9999)}",
@@ -683,7 +794,6 @@ def start_new_session():
     st.session_state.show_new_session_btn = False 
 
 def predict_customer_segment(features):
-    """Predict segment using direct rule-based segmentation"""
     try:
         print("🎯 Starting direct rule-based segmentation...")
         segment = st.session_state.segmenter.segment_single_customer(features)
@@ -716,10 +826,7 @@ def trigger_segmentation_and_recovery(session_data, abandoned_status):
         }
         
         strategy = recovery_manager.get_recovery_strategy(segment, user_context)
-        
-        # Log the segmentation
-        log_event('customer_segmented', None, None, None, 'system')
-        
+        log_event('customer_segmented', None, None, None, 'system')     
         return segment, strategy
         
     except Exception as e:
@@ -727,59 +834,60 @@ def trigger_segmentation_and_recovery(session_data, abandoned_status):
         return "Casual Browsers", recovery_manager.get_recovery_strategy("Casual Browsers")
 
 def handle_session_end(action_type):
-    """Handle session end with segmentation and recovery strategy"""
     if len(st.session_state.session_data['items']) > 0:
         if action_type == "abandon":
-            # Mark as abandoned and get segmentation
             st.session_state.session_data['payment_reached'] = False
             segment, strategy = trigger_segmentation_and_recovery(
                 st.session_state.session_data, 
                 abandoned_status=1
             )
             
-            # Save as abandoned WITH SEGMENT
-            csv_file = save_session_data(abandoned=1, segment=segment)
-            st.success("📊 Cart abandoned - saved!")
+            recovery_manager = RecoveryStrategyManager()
+            executed_actions = recovery_manager.execute_segment_actions(segment, st.session_state.session_data)
             
-            # Store the segment and strategy
+            csv_file = save_session_data(abandoned=1, segment=segment)
+            
             st.session_state.current_segment = segment
             st.session_state.current_recovery_strategy = strategy
+            st.session_state.executed_actions = executed_actions
             st.session_state.show_new_session_btn = True
             
+            st.success("📊 Cart abandoned - recovery actions triggered!")
+            
         elif action_type == "purchase":
-            # Mark as purchased and STILL get segmentation
             st.session_state.session_data['payment_reached'] = True
             segment, strategy = trigger_segmentation_and_recovery(
                 st.session_state.session_data,
                 abandoned_status=0
             )
-            
-            # Save as purchased WITH SEGMENT
+        
+            recovery_manager = RecoveryStrategyManager()
+            executed_actions = recovery_manager.execute_segment_actions(segment, st.session_state.session_data)
+
             csv_file = save_session_data(abandoned=0, segment=segment)
-            st.success("🎉 Purchase complete - saved!")
             
-            # Store the segment and strategy (even for purchases)
             st.session_state.current_segment = segment
             st.session_state.current_recovery_strategy = strategy
+            st.session_state.executed_actions = executed_actions
             st.session_state.show_new_session_btn = True
+            
+            st.success("🎉 Purchase complete - retention actions applied!")
     else:
         st.warning("❌ Add items to cart first!")
 
 def display_segmentation_ui(segment=None, strategy=None):
-    """Display segmentation and strategy in the UI - PERSISTENT"""
-    # Use from parameter or from session state
     if segment is None:
         segment = st.session_state.get('current_segment')
     if strategy is None:
         strategy = st.session_state.get('current_recovery_strategy')
+    
+    executed_actions = st.session_state.get('executed_actions', [])
     
     if not segment or not strategy:
         return
     
     st.sidebar.divider()
     st.sidebar.header("🎯 Customer Segmentation")
-    
-    # Color code based on priority
     priority_colors = {
         "Very High": "#ff4444",
         "High": "#ffaa00", 
@@ -797,10 +905,14 @@ def display_segmentation_ui(segment=None, strategy=None):
         <p style="margin: 4px 0; font-size: 0.85em;"><strong>Channel:</strong> {strategy['channel']}</p>
     </div>
     """, unsafe_allow_html=True)
-    
-    st.sidebar.write("**Recommended Actions:**")
-    for i, action in enumerate(strategy["strategies"][:3]):
-        st.sidebar.markdown(f"<div style='margin: 8px 0; padding-left: 10px; border-left: 2px solid {color};'>{action}</div>", unsafe_allow_html=True)
+    if executed_actions:
+        st.sidebar.write("**✅ Applied Actions:**")
+        for action in executed_actions:
+            st.sidebar.markdown(f"<div style='margin: 8px 0; padding-left: 10px; border-left: 2px solid {color}; font-size: 0.85em;'>{action}</div>", unsafe_allow_html=True)
+    else:
+        st.sidebar.write("**Recommended Actions:**")
+        for i, action in enumerate(strategy["strategies"][:3]):
+            st.sidebar.markdown(f"<div style='margin: 8px 0; padding-left: 10px; border-left: 2px solid {color}; font-size: 0.85em;'>{action}</div>", unsafe_allow_html=True)
 
 # ============================================================================
 # MAIN APP
@@ -809,9 +921,6 @@ def display_segmentation_ui(segment=None, strategy=None):
 def main():
     st.title("🛒 ShopEasy - Test Data Store")
     st.markdown("### Realistic shopping simulation with auto-saved features")
-    
-    # Show segmentation status
-    st.success("✅ Direct rule-based segmentation loaded")
     
     # Sidebar session info
     with st.sidebar:

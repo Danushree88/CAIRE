@@ -8,3 +8,14 @@ timestamp,session_id,user_id,product_id,product_name,category,event_type
 2025-10-21T09:55:28.076718,S1761020721,U7456,6,T-Shirt,Clothing,add_to_cart
 2025-10-21T09:55:38.688726,S1761020721,U7456,10,Laptop,Electronics,add_to_cart
 2025-10-21T09:55:52.872718,S1761020721,U7456,23,Sports Socks,Sports,add_to_cart
+2025-10-21T13:45:02.336376,S1761034468,U2787,10,Laptop,Electronics,add_to_cart
+2025-10-21T13:45:08.257670,S1761034468,U2787,10,Laptop,Electronics,add_to_cart
+2025-10-21T13:45:17.758864,S1761034468,U2787,22,Wireless Mouse,Electronics,add_to_cart
+2025-10-21T13:46:36.984852,S1761034570,U1543,11,Wireless Earbuds,Electronics,add_to_cart
+2025-10-21T13:47:40.222263,S1761034655,U3445,28,Sports Bag,Sports,add_to_cart
+2025-10-21T13:48:14.872884,S1761034685,U1331,10,Laptop,Electronics,add_to_cart
+2025-10-21T13:48:46.451028,S1761034685,U1331,3,Cookware Set,Home & Kitchen,add_to_cart
+2025-10-21T13:50:06.205224,S1761034788,U6958,2,Car Accessories,Automotive,add_to_cart
+2025-10-21T13:50:20.854456,S1761034788,U6958,17,Desk Lamp,Home & Kitchen,add_to_cart
+2025-10-21T13:54:37.315892,S1761035052,U5089,1,Smartphone,Electronics,add_to_cart
+2025-10-21T13:55:03.995805,S1761035052,U5089,3,Cookware Set,Home & Kitchen,add_to_cart
