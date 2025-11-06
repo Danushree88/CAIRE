@@ -14,6 +14,73 @@ class SegmentAnalysisTab:
         self.segmenter = None
         self.df = None
         
+        # Static strategies data
+        self.segment_strategies = {
+            "High-Value Loyalists": {
+                "priority": "Low",
+                "strategies": [
+                    "💎 VIP early access to new products",
+                    "🎫 Double loyalty points campaign", 
+                    "📧 Regular updates about products matching their preferences",
+                    "🎁 Surprise free shipping or small gifts on next purchase"
+                ],
+                "channel": "Email + Mobile App Notification",
+                "loyalty_points_multiplier": 2.0,
+                "complementary_products": ["Phone Case", "Screen Protector", "Wireless Earbuds"]
+            },
+            "At-Risk Converters": {
+                "priority": "Very High",
+                "strategies": [
+                    "🔥 Limited-time discount (10-15%) on abandoned items",
+                    "🚀 Personal executive email follow-up",
+                    "📞 Personal shopping assistant offer", 
+                    "⏰ Stock availability alerts for items in cart"
+                ],
+                "channel": "Email + SMS + Push Notification",
+                "discount_range": (10, 15),
+                "stock_alert_threshold": 5
+            },
+            "Engaged Researchers": {
+                "priority": "High", 
+                "strategies": [
+                    "📚 Product expert consultation offer",
+                    "🎥 Detailed product demonstration videos",
+                    "💬 Live chat support promotion",
+                    "🔍 Advanced product comparison tools"
+                ],
+                "channel": "Email + Retargeting Ads",
+                "expert_consultation": True,
+                "demo_videos": True
+            },
+            "Price-Sensitive Shoppers": {
+                "priority": "Medium",
+                "strategies": [
+                    "💰 Tiered discounts based on cart value",
+                    "🎟️ Additional promo codes for next purchase",
+                    "📦 Free shipping threshold reduction",
+                    "🔄 Price drop alerts for watched items"
+                ],
+                "channel": "Email + Browser Push",
+                "free_shipping_threshold": 150,
+                "tiered_discounts": {
+                    "500": 5,
+                    "1000": 10, 
+                    "2000": 15
+                }
+            },
+            "Casual Browsers": {
+                "priority": "Low",
+                "strategies": [
+                    "🌐 Personalized product recommendations",
+                    "📢 New arrival notifications", 
+                    "🏆 Social proof and trending products",
+                    "🔔 Re-engagement campaign after 7 days"
+                ],
+                "channel": "Email only",
+                "reengagement_days": 7
+            }
+        }
+        
     def load_data_and_segmenter(self):
         try:
             project_root = Path(__file__).parent  
@@ -86,7 +153,7 @@ class SegmentAnalysisTab:
         
     def render_segment_overview(self):
         """Render comprehensive segment overview"""
-        create_section("🎯 Customer Segments Overview", "AI-Powered Behavioral Segmentation")
+        create_section("🎯 Customer Segments Overview")
         
         if self.segmenter is None or self.df is None:
             warning_box("Segmentation data not available. Please check data files.")
@@ -198,173 +265,55 @@ class SegmentAnalysisTab:
         st.dataframe(display_df, use_container_width=True)
 
     def render_recovery_strategies(self):
-        """Render actionable strategy implementation panel"""
-        create_section("🛠️ Strategy Implementation", "Deploy & Track Recovery Actions")
+        """Render static recovery strategies"""
+        create_section("🛠️ Recovery Strategies", "Pre-defined Segment-Specific Actions")
         
         if self.segmenter is None:
             return
         
-        # Strategy options for each segment - UPDATED FOR 5 SEGMENTS
-        strategy_options = {
-            "High-Value Loyalists": [
-                "💎 VIP early access to new products",
-                "🎫 Double loyalty points campaign", 
-                "📧 Regular updates about products matching their preferences",
-                "🎁 Surprise free shipping or small gifts on next purchase"
-            ],
-            "At-Risk Converters": [
-                "🔥 Limited-time discount (10-15%) on abandoned items",
-                "🚀 Personal executive email follow-up",
-                "⏰ Stock availability alerts for items in cart",
-                "📞 Personal shopping assistant offer"
-            ],
-            "Engaged Researchers": [
-                "📚 Product expert consultation offer",
-                "🎥 Detailed product demonstration videos",
-                "💬 Live chat support promotion",
-                "🔍 Advanced product comparison tools"
-            ],
-            "Price-Sensitive Shoppers": [
-                "💰 Tiered discounts based on cart value",
-                "🎟️ Additional promo codes for next purchase",
-                "📦 Free shipping threshold reduction",
-                "🔄 Price drop alerts for watched items"
-            ],
-            "Casual Browsers": [
-                "🌐 Personalized product recommendations",
-                "📢 New arrival notifications",
-                "🏆 Social proof and trending products",
-                "🔔 Re-engagement campaign after 7 days"
-            ]
-        }
+        st.subheader("🎯 Segment-Specific Recovery Strategies")
         
-        st.subheader("🎯 Select & Deploy Strategies")
-        
-        # Strategy selection and deployment
+        # Display strategies for each segment
         for segment_id, profile in self.segmenter.segment_profiles.items():
             segment_name = profile['segment_name']
+            strategy = self.segment_strategies.get(segment_name, {})
             
-            with st.expander(f"🛠️ {segment_name} - {profile['size']} users", expanded=False):
+            with st.expander(f"📋 {segment_name} - {len(strategy.get('strategies', []))} Strategies", expanded=False):
                 
                 col1, col2 = st.columns([2, 1])
                 
                 with col1:
-                    # Strategy selection - UNIQUE KEY
-                    selected_strategies = st.multiselect(
-                        f"Choose strategies for {segment_name}:",
-                        options=strategy_options.get(segment_name, []),
-                        default=[],
-                        key=f"strategies_select_{segment_id}"  # UNIQUE KEY
-                    )
+                    if strategy:
+                        st.write(f"**Priority:** `{strategy.get('priority', 'Medium')}`")
+                        st.write(f"**Channel:** `{strategy.get('channel', 'Email')}`")
+                        
+                        st.write("**Strategies:**")
+                        for i, action in enumerate(strategy.get('strategies', []), 1):
+                            st.write(f"{i}. {action}")
+                        
+                        # Show additional configurations
+                        if segment_name == "High-Value Loyalists":
+                            st.info(f"**Loyalty Multiplier:** {strategy.get('loyalty_points_multiplier', 1.0)}x")
+                            st.info(f"**Complementary Products:** {', '.join(strategy.get('complementary_products', []))}")
+                        
+                        elif segment_name == "At-Risk Converters":
+                            discount_range = strategy.get('discount_range', (10, 15))
+                            st.info(f"**Discount Range:** {discount_range[0]}-{discount_range[1]}%")
+                            st.info(f"**Stock Alert Threshold:** {strategy.get('stock_alert_threshold', 5)} items")
+                        
+                        elif segment_name == "Price-Sensitive Shoppers":
+                            threshold = strategy.get('free_shipping_threshold', 150)
+                            st.info(f"**Free Shipping Threshold:** ₹{threshold}")
+                            discounts = strategy.get('tiered_discounts', {})
+                            discount_str = ", ".join([f"₹{k}: {v}%" for k, v in discounts.items()])
+                            st.info(f"**Tiered Discounts:** {discount_str}")
                     
-                    if selected_strategies:
-                        # Implementation configuration - UNIQUE KEYS
-                        st.write("**⚙️ Implementation Settings:**")
-                        
-                        col_a, col_b = st.columns(2)
-                        with col_a:
-                            start_date = st.date_input("Start Date", key=f"date_{segment_id}_{segment_name}")  # UNIQUE
-                            assigned_team = st.selectbox("Assigned Team", 
-                                                    ["Marketing", "Sales", "Customer Success", "Automated"],
-                                                    key=f"team_{segment_id}_{segment_name}")  # UNIQUE
-                        
-                        with col_b:
-                            budget = st.number_input("Budget Allocation ($)", 
-                                                min_value=0, value=1000, 
-                                                key=f"budget_{segment_id}_{segment_name}")  # UNIQUE
-                            success_metric = st.selectbox("Success Metric",
-                                                        ["Reduced Abandonment", "Increased Revenue", "Improved Conversion"],
-                                                        key=f"metric_{segment_id}_{segment_name}")  # UNIQUE
-                
                 with col2:
-                    # Quick actions - UNIQUE KEYS
-                    st.write("**🚀 Quick Actions:**")
-                    
-                    if st.button(f"📋 Save Plan", key=f"save_{segment_id}_{segment_name}", use_container_width=True):  # UNIQUE
-                        st.success(f"Strategy plan saved for {segment_name}!")
-                    
-                    if st.button(f"📧 Deploy Now", key=f"deploy_{segment_id}_{segment_name}", use_container_width=True):  # UNIQUE
-                        st.success(f"Deploying {len(selected_strategies)} strategies for {segment_name}!")
-                    
-                    if st.button(f"📊 Track Progress", key=f"track_{segment_id}_{segment_name}", use_container_width=True):  # UNIQUE
-                        st.success(f"Opening progress dashboard for {segment_name}!")
-        
-        # Bulk actions - UNIQUE KEYS
-        st.markdown("---")
-        st.subheader("📈 Bulk Operations")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            if st.button("🔄 Deploy All High-Risk Strategies", type="primary", 
-                        key="bulk_deploy_all", use_container_width=True):  # UNIQUE
-                st.success("Deploying strategies for all high-abandonment segments!")
-        
-        with col2:
-            if st.button("📋 Generate Implementation Report", 
-                        key="bulk_generate_report", use_container_width=True):  # UNIQUE
-                st.success("Implementation report generated!")
-        
-        with col3:
-            if st.button("💰 Calculate Total Budget", 
-                        key="bulk_calculate_budget", use_container_width=True):  # UNIQUE
-                st.success("Total budget calculation completed!")
+                    st.write("**Segment Stats:**")
+                    st.metric("Customers", f"{profile['size']:,}")
+                    st.metric("Abandonment", f"{profile['abandonment_rate']:.1f}%")
+                    st.metric("Avg Cart Value", f"₹{profile['avg_cart_value']:.2f}")
 
-    def render_segment_actions(self):
-        """Render actionable insights and next steps"""
-        create_section("🚀 Recommended Actions", "Priority-Based Implementation Plan")
-        
-        if self.segmenter is None:
-            return
-        
-        # Priority-based action plan
-        st.subheader("🎯 Priority Action Plan")
-        
-        # Group segments by priority
-        priority_groups = {}
-        for segment_id, profile in self.segmenter.segment_profiles.items():
-            priority = profile['recovery_priority']
-            if priority not in priority_groups:
-                priority_groups[priority] = []
-            priority_groups[priority].append(profile)
-        
-        # Display actions by priority
-        for priority in ["Very High", "High", "Medium", "Low"]:
-            if priority in priority_groups:
-                with st.expander(f"🔴 {priority} Priority Segments", expanded=(priority in ["Very High", "High"])):
-                    for profile in priority_groups[priority]:
-                        st.write(f"**{profile['segment_name']}**")
-                        st.write(f"*Size: {profile['size']} users | Recovery Score: {profile['recovery_priority_score']}/100*")
-                        
-                        # Quick wins based on segment type
-                        st.write("**Quick Wins:**")
-                        
-                        if profile['segment_name'] == "At-Risk Converters":
-                            st.write("• Implement immediate abandoned cart email sequence")
-                            st.write("• Assign dedicated high-value customer support")
-                            st.write("• Offer personalized discount codes")
-                            
-                        elif profile['segment_name'] == "Engaged Researchers":
-                            st.write("• Provide product expert consultation")
-                            st.write("• Share detailed product videos and guides")
-                            st.write("• Enable live chat support")
-                            
-                        elif profile['segment_name'] == "Price-Sensitive Shoppers":
-                            st.write("• Create tiered discount structure")
-                            st.write("• Highlight free shipping thresholds")
-                            st.write("• Send flash sale notifications")
-                            
-                        elif profile['segment_name'] == "High-Value Loyalists":
-                            st.write("• Offer VIP early access to products")
-                            st.write("• Enhance loyalty program benefits")
-                            st.write("• Provide personalized recommendations")
-                            
-                        elif profile['segment_name'] == "Casual Browsers":
-                            st.write("• Send welcome discount for first purchase")
-                            st.write("• Promote mobile app benefits")
-                            st.write("• Create re-engagement campaigns")
-                        
-                        st.write("")
 
     def run(self):
         
@@ -373,14 +322,11 @@ class SegmentAnalysisTab:
             self.df, self.segmenter = self.load_data_and_segmenter()
         
         if self.segmenter and self.df is not None:
-            success_box(f"✅ Successfully analyzed {len(self.df):,} customers across {len(self.segmenter.segment_profiles)} behavioral segments")
-            
             # Create tabs for different segmentation views
             seg_tabs = st.tabs([
                 "📊 Overview", 
                 "📈 Performance", 
-                "🛠️ Strategies",
-                "🚀 Actions"
+                "🛠️ Strategies"
             ])
             
             with seg_tabs[0]:
@@ -392,8 +338,6 @@ class SegmentAnalysisTab:
             with seg_tabs[2]:
                 self.render_recovery_strategies()
             
-            with seg_tabs[3]:
-                self.render_segment_actions()
         else:
             error_box("""
             **Unable to load segmentation system.** Please ensure:

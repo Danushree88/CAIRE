@@ -82,3 +82,19 @@ timestamp,session_id,user_id,product_id,product_name,category,event_type
 2025-11-07T00:21:26.085112,S1762455070,U7260,8,Running Shoes,Sports,add_to_cart
 2025-11-07T00:21:30.860412,S1762455070,U7260,2,Car Accessories,Automotive,add_to_cart
 2025-11-07T00:21:34.201220,S1762455070,U7260,8,Running Shoes,Sports,add_to_cart
+2025-11-07T00:48:11.700524,S1762456682,U7634,5,Novel Collection,Books,add_to_cart
+2025-11-07T00:48:18.367404,S1762456682,U7634,15,Backpack,Accessories,add_to_cart
+2025-11-07T00:48:26.283215,S1762456682,U7634,2,Car Accessories,Automotive,add_to_cart
+2025-11-07T00:48:34.131280,S1762456682,U7634,27,Power Bank,Electronics,add_to_cart
+2025-11-07T00:52:48.039865,S1762456723,U8332,19,Sunglasses,Accessories,add_to_cart
+2025-11-07T00:52:53.305281,S1762456723,U8332,8,Running Shoes,Sports,add_to_cart
+2025-11-07T00:52:58.064628,S1762456723,U8332,23,Sports Socks,Sports,add_to_cart
+2025-11-07T00:54:05.122575,S1762456723,U8332,2,Car Accessories,Automotive,add_to_cart
+2025-11-07T00:54:32.035941,S1762457064,U1720,18,Water Bottle,Sports,add_to_cart
+2025-11-07T00:54:34.909657,S1762457064,U1720,27,Power Bank,Electronics,add_to_cart
+2025-11-07T00:54:42.159098,S1762457064,U1720,1,Smartphone,Electronics,add_to_cart
+2025-11-07T00:58:36.170951,S1762457309,U9331,4,Skincare Kit,Beauty,add_to_cart
+2025-11-07T00:59:25.005494,S1762457309,U9331,5,Novel Collection,Books,add_to_cart
+2025-11-07T00:59:29.145469,S1762457309,U9331,19,Sunglasses,Accessories,add_to_cart
+2025-11-07T00:59:50.299676,S1762457309,U9331,3,Cookware Set,Home & Kitchen,add_to_cart
+2025-11-07T00:59:57.158210,S1762457309,U9331,4,Skincare Kit,Beauty,add_to_cart
