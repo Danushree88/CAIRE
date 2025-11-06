@@ -7,26 +7,22 @@ import sys
 import json
 from datetime import datetime
 
-# =========================================================
 # FIXED: Add path and import model classes FIRST
-# =========================================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
 
 # Import model classes BEFORE loading the pickle file
 from model import GradientBoostingClassifierManual, RandomForestManual, DecisionTreeClassifierManual, LogisticRegressionGD, KNNClassifier
 
-# =========================================================
-# PATH CONFIGURATION
-# =========================================================
+# PATH CONFIGURATION FOR DEBUGGING
 MODELS_DIR = BASE_DIR
 DATA_DIR = os.path.join(BASE_DIR, "data")
-
+"""
 st.sidebar.markdown("---")
 st.sidebar.write("**Path Debug:**")
 st.sidebar.write(f"BASE_DIR: {BASE_DIR}")
 st.sidebar.write(f"DATA_DIR: {DATA_DIR}")
-st.sidebar.write(f"DATA_DIR exists: {os.path.exists(DATA_DIR)}")
+st.sidebar.write(f"DATA_DIR exists: {os.path.exists(DATA_DIR)}")"""
 
 model_path = os.path.join(MODELS_DIR, "final_manual_model.pkl")
 
@@ -43,9 +39,16 @@ def load_model():
             
         if isinstance(model_data, dict) and "model" in model_data:
             loaded_model = model_data["model"]
-            if "feature_names" in model_data:
-                loaded_model.feature_names = model_data["feature_names"]
+            feature_names = model_data.get("feature_names", [])
+            best_params = model_data.get("best_params", {})
+            
+            # Store additional info as attributes
+            loaded_model.feature_names = feature_names
+            loaded_model.best_params = best_params
+            
             st.success("✅ Model loaded successfully from dictionary!")
+            st.info(f"📊 Model Type: {best_params.get('model_type', 'Unknown')}")
+            
         else:
             loaded_model = model_data
             st.success("✅ Model loaded successfully!")
@@ -85,7 +88,7 @@ class PredictionPreprocessor:
         self.load_preprocessing_artifacts()
     
     def load_preprocessing_artifacts(self):
-        """Load the encoders and scalers used during training"""
+        """Load the encoders and scalers used during training
         try:
             # Show file paths for debugging
             st.sidebar.markdown("---")
@@ -126,7 +129,7 @@ class PredictionPreprocessor:
         except Exception as e:
             st.error(f"❌ Error loading preprocessing artifacts: {e}")
             import traceback
-            st.error(traceback.format_exc())
+            st.error(traceback.format_exc())"""
     
     def preprocess_raw_data(self, raw_data):
         """Replicate the exact preprocessing pipeline from training"""
@@ -278,7 +281,7 @@ class PredictionPreprocessor:
             return raw_data  # Return original data as fallback
 
 # =========================================================
-# Updated Prediction Engine Class
+# Updated Prediction Engine Class - FIXED FOR GRADIENT BOOSTING
 # =========================================================
 class PredictionEngine:
     def __init__(self):
@@ -291,12 +294,11 @@ class PredictionEngine:
         if not self.model:
             return []
         
+        # First try to get feature names from the loaded model data
         if hasattr(self.model, 'feature_names') and self.model.feature_names:
             return self.model.feature_names
-        elif hasattr(self.model, 'feature_names_'):
-            return self.model.feature_names_
-        elif hasattr(self.model, 'get_feature_names'):
-            return self.model.get_feature_names()
+        elif hasattr(self.model, 'best_params') and 'feature_names' in self.model.best_params:
+            return self.model.best_params['feature_names']
         else:
             # Return the actual feature names from your engineered dataset
             st.warning("⚠️ Using default feature names from engineered dataset")
@@ -397,60 +399,6 @@ class PredictionEngine:
         
         return raw_features
 
-    def debug_prediction(self, raw_features):
-        """Debug the prediction pipeline step by step"""
-        st.markdown("### 🐛 Prediction Debug")
-        
-        # 1. Show raw input
-        st.write("**1. Raw Input Features:**")
-        st.json(raw_features)
-        
-        # 2. Transform to engineered features
-        raw_df = pd.DataFrame([raw_features])
-        engineered_df = self.preprocessor.transform_raw_to_engineered(raw_df)
-        
-        st.write("**2. Engineered Features:**")
-        st.dataframe(engineered_df)
-        
-        # 3. Check feature alignment
-        st.write("**3. Feature Alignment:**")
-        missing_features = [f for f in self.feature_names if f not in engineered_df.columns]
-        extra_features = [f for f in engineered_df.columns if f not in self.feature_names]
-        
-        st.write(f"Missing from engineered: {missing_features}")
-        st.write(f"Extra in engineered: {extra_features}")
-        
-        # 4. Create feature vector
-        feature_vector = []
-        for feature in self.feature_names:
-            if feature in engineered_df.columns:
-                feature_vector.append(engineered_df[feature].iloc[0])
-            else:
-                feature_vector.append(0)
-        
-        feature_vector = np.array(feature_vector).reshape(1, -1)
-        
-        st.write("**4. Final Feature Vector:**")
-        st.write(f"Shape: {feature_vector.shape}")
-        st.write(f"First 10 values: {feature_vector[0][:10]}")
-        
-        # 5. Model prediction
-        st.write("**5. Model Prediction:**")
-        try:
-            if hasattr(self.model, 'predict_proba'):
-                raw_probs = self.model.predict_proba(feature_vector)
-                st.write(f"Raw probabilities: {raw_probs}")
-                st.write(f"Raw probabilities type: {type(raw_probs)}")
-                st.write(f"Raw probabilities shape: {getattr(raw_probs, 'shape', 'No shape')}")
-                
-                extracted_prob = self._extract_probability(raw_probs)
-                st.write(f"Extracted probability: {extracted_prob}")
-            else:
-                prediction = self.model.predict(feature_vector)
-                st.write(f"Raw prediction: {prediction}")
-        except Exception as e:
-            st.error(f"Prediction error: {e}")
-
     def render_single_prediction(self):
         """Render single prediction interface using RAW data"""
         st.markdown("### 🔮 Single Session Prediction (Raw Data)")
@@ -508,7 +456,7 @@ class PredictionEngine:
             
             feature_vector = np.array(feature_vector).reshape(1, -1)
             
-            # Get prediction probability
+            # Get prediction probability - FIXED FOR GRADIENT BOOSTING
             if hasattr(self.model, 'predict_proba'):
                 raw_probs = self.model.predict_proba(feature_vector)
                 
@@ -521,6 +469,7 @@ class PredictionEngine:
                 
                 prob_abandon = self._extract_probability(raw_probs)
             else:
+                # Fallback for models without predict_proba
                 prediction = self.model.predict(feature_vector)
                 prob_abandon = float(prediction[0]) if prediction[0] in [0, 1] else 0.5
                 st.warning("⚠️ Using predict() instead of predict_proba() - probabilities may not be accurate")
@@ -534,6 +483,42 @@ class PredictionEngine:
             st.error(f"❌ Prediction error: {e}")
             import traceback
             st.text(traceback.format_exc())
+
+    def _extract_probability(self, raw_probs):
+        """Robust probability extraction for GradientBoostingClassifierManual"""
+        try:
+            # Handle GradientBoostingClassifierManual specifically
+            if isinstance(self.model, GradientBoostingClassifierManual):
+                # For manual gradient boosting, it might return a single probability
+                if isinstance(raw_probs, (int, float, np.number)):
+                    return float(raw_probs)
+                elif hasattr(raw_probs, '__len__') and len(raw_probs) == 1:
+                    return float(raw_probs[0])
+                elif hasattr(raw_probs, '__len__') and len(raw_probs) == 2:
+                    # Assume [prob_class_0, prob_class_1]
+                    return float(raw_probs[1])
+                else:
+                    # Try to extract from array
+                    return float(raw_probs.flat[0])
+            
+            # For other models, use standard extraction
+            if hasattr(raw_probs, 'shape'):
+                if raw_probs.shape[1] == 2:
+                    # [[prob_class_0, prob_class_1]]
+                    return float(raw_probs[0, 1])
+                elif raw_probs.shape[1] == 1:
+                    # [[prob_class_1]]
+                    return float(raw_probs[0, 0])
+            elif hasattr(raw_probs, '__len__') and len(raw_probs) == 2:
+                # [prob_class_0, prob_class_1]
+                return float(raw_probs[1])
+            else:
+                # Single probability value
+                return float(raw_probs[0])
+                
+        except Exception as e:
+            st.warning(f"⚠️ Probability extraction warning: {e}. Using default 0.5")
+            return 0.5
 
     def display_prediction_results(self, prob_percent, prob_abandon):
         """Display prediction results"""
@@ -570,48 +555,6 @@ class PredictionEngine:
         else:
             st.success("🟢 **LOW RISK**: Likely to complete purchase. Standard monitoring recommended.")
             st.info("💡 **Suggested Action**: Normal follow-up sequence, focus on customer satisfaction")
-
-    def _extract_probability(self, raw_probs):
-        """Robust probability extraction for various model formats"""
-        try:
-            # Handle GradientBoostingClassifierManual specifically
-            if hasattr(self.model, '__class__') and self.model.__class__.__name__ == 'GradientBoostingClassifierManual':
-                # For manual models, they might return probabilities directly
-                if isinstance(raw_probs, (int, float, np.number)):
-                    return float(raw_probs)
-                elif hasattr(raw_probs, '__len__') and len(raw_probs) == 1:
-                    return float(raw_probs[0])
-                elif hasattr(raw_probs, '__len__') and len(raw_probs) == 2:
-                    return float(raw_probs[1])  # Assume second element is positive class
-            
-            # Convert to numpy array for consistent handling
-            if hasattr(raw_probs, 'shape'):
-                probs_array = raw_probs
-            else:
-                probs_array = np.array(raw_probs)
-            
-            # Handle different probability array formats
-            if probs_array.ndim == 1:
-                if len(probs_array) == 2:
-                    # [prob_class_0, prob_class_1]
-                    return float(probs_array[1])
-                else:
-                    # Single probability value
-                    return float(probs_array[0])
-            elif probs_array.ndim == 2:
-                if probs_array.shape[1] == 2:
-                    # [[prob_class_0, prob_class_1]]
-                    return float(probs_array[0, 1])
-                elif probs_array.shape[1] == 1:
-                    # [[prob_class_1]] - single class probability
-                    return float(probs_array[0, 0])
-            else:
-                # Fallback: return first element
-                return float(probs_array.flat[0])
-                
-        except Exception as e:
-            st.warning(f"⚠️ Probability extraction warning: {e}. Using default 0.5")
-            return 0.5
 
     def render_batch_prediction(self):
         """Render batch prediction interface for RAW data"""
@@ -713,7 +656,6 @@ class PredictionEngine:
             import traceback
             st.text(traceback.format_exc())
 
-    # Keep the existing debug_model, render_model_info, and run methods unchanged
     def debug_model(self):
         """Debug function to identify model issues"""
         st.markdown("### 🐛 Debug Information")
@@ -726,6 +668,11 @@ class PredictionEngine:
         st.write(f"**Model Class**: {self.model.__class__.__name__}")
         st.write(f"**Feature Names**: {self.feature_names}")
         st.write(f"**Number of Features**: {len(self.feature_names)}")
+        
+        # Show best parameters if available
+        if hasattr(self.model, 'best_params'):
+            st.write("**Best Parameters**:")
+            st.json(self.model.best_params)
         
         # Check available methods
         methods = [method for method in dir(self.model) if not method.startswith('_') and callable(getattr(self.model, method))]
@@ -776,18 +723,22 @@ class PredictionEngine:
             st.subheader("Model Details")
             st.write(f"**Model Type**: {self.model_type}")
             st.write(f"**Features Used**: {len(self.feature_names)}")
-            st.write(f"**Available Methods**:")
-            methods = [method for method in dir(self.model) if not method.startswith('_') and callable(getattr(self.model, method))]
-            for method in methods[:6]:
-                st.write(f"  - {method}()")
             
-            # Show first few features
-            st.write(f"**Features (first 10)**:")
-            for feature in self.feature_names[:10]:
-                st.write(f"  - {feature}")
-            if len(self.feature_names) > 10:
-                st.write(f"  - ... and {len(self.feature_names) - 10} more")
-        
+            # Show best parameters for Gradient Boosting
+            if hasattr(self.model, 'best_params') and self.model.best_params:
+                st.write("**Best Parameters**:")
+                params = self.model.best_params.get('parameters', {})
+                for key, value in params.items():
+                    st.write(f"  - {key}: {value}")
+            
+            # Show performance if available
+            if hasattr(self.model, 'best_params') and self.model.best_params:
+                performance = self.model.best_params.get('performance', {})
+                if performance:
+                    st.write("**Test Performance**:")
+                    for metric, score in performance.items():
+                        st.write(f"  - {metric}: {score:.4f}")
+            
         with col2:
             st.subheader("Prediction Guidelines")
             st.write("**🔴 HIGH RISK**: >70% - Immediate action needed")
@@ -904,9 +855,7 @@ class PredictionEngine:
         with pred_tabs[2]:
             self.render_model_info()
 
-# =========================================================
 # Main execution
-# =========================================================
 def main():
     st.set_page_config(
         page_title="Cart Abandonment Predictor",
@@ -916,7 +865,10 @@ def main():
     
     st.title("🛒 Cart Abandonment Prediction System")
     
-    if not loaded_model:
+    # Initialize the prediction engine
+    engine = PredictionEngine()
+    
+    if not engine.model:
         st.error("""
         **Model not loaded**. Please ensure:
         1. You're running the correct file (`streamlit run prediction_tab.py`)
@@ -925,46 +877,22 @@ def main():
         """)
         return
     
-    st.success(f"✅ Model loaded: {loaded_model.__class__.__name__}")
+    # Show model info
+    if hasattr(engine.model, 'best_params'):
+        best_params = engine.model.best_params
+        model_type = best_params.get('model_type', 'Unknown')
+        st.success(f"✅ **{model_type}** loaded successfully!")
+        
+        # Show performance if available
+        performance = best_params.get('performance', {})
+        if performance:
+            st.info(f"📊 **Test Performance**: ROC-AUC: {performance.get('roc_auc', 'N/A'):.4f} | "
+                   f"F1: {performance.get('f1', 'N/A'):.4f}")
+    else:
+        st.success(f"✅ Model loaded: {engine.model.__class__.__name__}")
     
-    # Simple test interface
-    st.subheader("🔮 Quick Prediction Test")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        session_duration = st.number_input("Session Duration (seconds)", 0, 3600, 300)
-        num_pages = st.number_input("Pages Viewed", 1, 100, 8)
-        scroll_depth = st.slider("Scroll Depth (%)", 0, 100, 50)
-    
-    with col2:
-        cart_value = st.number_input("Cart Value ($)", 0.0, 1000.0, 150.0)
-        return_user = st.selectbox("Return User", [0, 1], format_func=lambda x: "New" if x == 0 else "Return")
-        reached_payment = st.selectbox("Reached Payment", [0, 1], format_func=lambda x: "No" if x == 0 else "Yes")
-    
-    if st.button("🎯 Test Prediction"):
-        # Create a simple feature vector (you'll need to adapt this to your actual features)
-        try:
-            # This is a simplified test - you'll need to use your actual preprocessing
-            if hasattr(loaded_model, 'predict_proba'):
-                # Create dummy features for testing
-                dummy_features = np.random.random((1, len(loaded_model.feature_names)))
-                probabilities = loaded_model.predict_proba(dummy_features)
-                
-                st.write("**Raw probabilities:**", probabilities)
-                
-                # Extract probability
-                if hasattr(probabilities, 'shape') and probabilities.shape[1] == 2:
-                    prob_abandon = probabilities[0, 1]
-                else:
-                    prob_abandon = float(probabilities[0])
-                
-                st.metric("Abandonment Probability", f"{prob_abandon*100:.1f}%")
-            else:
-                st.error("Model doesn't have predict_proba method")
-                
-        except Exception as e:
-            st.error(f"Prediction error: {e}")
+    # Run the prediction engine
+    engine.run()
 
 if __name__ == "__main__":
     main()

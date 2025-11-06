@@ -46,7 +46,7 @@ class SegmentAnalysisTab:
             for featured_path in possible_paths:
                 if featured_path.exists():
                     self.df = pd.read_csv(featured_path)
-                    st.success(f"✅ Data loaded from: {featured_path}")
+                    #st.success(f"✅ Data loaded from: {featured_path}")
                     break
             
             if self.df is None:
@@ -367,9 +367,6 @@ class SegmentAnalysisTab:
                         st.write("")
 
     def run(self):
-        """Main method to run enhanced segmentation tab"""
-        create_header("AI-Powered Customer Segmentation", 
-                    "Intelligent Behavioral Analysis & Recovery Strategies", "👥")
         
         # Load data and segmenter
         with st.spinner("🔄 Loading segmentation data and AI models..."):

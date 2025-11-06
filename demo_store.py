@@ -228,7 +228,6 @@ class RecoveryStrategyManager:
             "priority": segment_info["priority"],
             "message": f"Targeted recovery for {segment_name}",
             "strategies": segment_info["strategies"],
-            "timing": segment_info["timing"],
             "channel": segment_info["channel"],
             "user_context": user_data
         }
@@ -901,7 +900,6 @@ def display_segmentation_ui(segment=None, strategy=None):
     <div style="padding: 15px; border-radius: 8px; border-left: 5px solid {color}; background-color: #f8f9fa; margin: 10px 0;">
         <h4 style="margin: 0 0 8px 0; color: {color};">{segment}</h4>
         <p style="margin: 4px 0; font-size: 0.9em;"><strong>Priority:</strong> {strategy['priority']}</p>
-        <p style="margin: 4px 0; font-size: 0.85em;"><strong>Timing:</strong> {strategy['timing']}</p>
         <p style="margin: 4px 0; font-size: 0.85em;"><strong>Channel:</strong> {strategy['channel']}</p>
     </div>
     """, unsafe_allow_html=True)

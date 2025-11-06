@@ -1,5 +1,6 @@
 # custom_styles.py
 import streamlit as st
+import pandas as pd
 
 def load_custom_css():
     """Load custom CSS styles for the dashboard"""

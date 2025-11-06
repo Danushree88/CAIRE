@@ -19,3 +19,24 @@ timestamp,session_id,user_id,product_id,product_name,category,event_type
 2025-10-21T13:50:20.854456,S1761034788,U6958,17,Desk Lamp,Home & Kitchen,add_to_cart
 2025-10-21T13:54:37.315892,S1761035052,U5089,1,Smartphone,Electronics,add_to_cart
 2025-10-21T13:55:03.995805,S1761035052,U5089,3,Cookware Set,Home & Kitchen,add_to_cart
+2025-10-24T22:49:26.424585,S1761326360,U9958,1,Smartphone,Electronics,add_to_cart
+2025-10-24T22:49:28.212108,S1761326360,U9958,2,Car Accessories,Automotive,add_to_cart
+2025-10-24T22:49:30.894986,S1761326360,U9958,27,Power Bank,Electronics,add_to_cart
+2025-10-24T22:50:24.874213,S1761326416,U4186,4,Skincare Kit,Beauty,add_to_cart
+2025-10-24T22:52:05.891751,S1761326518,U3421,29,Watch,Accessories,add_to_cart
+2025-10-24T22:54:35.245544,S1761326668,U8573,1,Smartphone,Electronics,add_to_cart
+2025-10-24T22:55:42.336052,S1761326738,U9203,2,Car Accessories,Automotive,add_to_cart
+2025-10-24T22:55:44.746761,S1761326738,U9203,4,Skincare Kit,Beauty,add_to_cart
+2025-10-24T22:56:06.365049,S1761326738,U9203,3,Cookware Set,Home & Kitchen,add_to_cart
+2025-10-24T22:56:07.946381,S1761326738,U9203,6,T-Shirt,Clothing,add_to_cart
+2025-10-24T22:56:38.767817,S1761326738,U9203,3,Cookware Set,Home & Kitchen,add_to_cart
+2025-10-24T22:56:48.477705,S1761326802,U4371,10,Laptop,Electronics,add_to_cart
+2025-10-24T22:57:13.759539,S1761326802,U4371,24,Kitchen Utensils,Home & Kitchen,add_to_cart
+2025-10-24T22:58:15.550883,S1761326888,U2468,4,Skincare Kit,Beauty,add_to_cart
+2025-10-24T23:02:56.361353,S1761326888,U2468,1,Smartphone,Electronics,add_to_cart
+2025-10-24T23:03:54.996075,S1761326888,U2468,4,Skincare Kit,Beauty,add_to_cart
+2025-10-24T23:04:30.011181,S1761327258,U2626,10,Laptop,Electronics,add_to_cart
+2025-10-24T23:05:39.520203,S1761327258,U2626,21,Screen Protector,Electronics,add_to_cart
+2025-11-06T15:55:50.296987,S1762424743,U7558,4,Skincare Kit,Beauty,add_to_cart
+2025-11-06T15:55:51.642880,S1762424743,U7558,5,Novel Collection,Books,add_to_cart
+2025-11-06T15:56:14.592360,S1762424767,U2648,4,Skincare Kit,Beauty,add_to_cart

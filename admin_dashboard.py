@@ -48,43 +48,18 @@ class AdminDashboardTab(BaseTab):
             'featured_data': project_root / "data" / "cart_abandonment_featured.csv",
             'original_data': project_root / "data" / "cart_abandonment_dataset.csv", 
             'test_data': project_root / "test_data" / "test_data_for_prediction.csv",
-            'model': project_root / "saved_models" / "final_manual_model.pkl",
             'models_dir': project_root / "src" / "models"
         }
         
         return paths
 
-    def load_model_and_data(self):
+    def load_datasets(self):
         self.paths = self.get_correct_paths()
         self.df = self.load_data(self.paths['featured_data'])
         self.df1 = self.load_data(self.paths['original_data'])
         self.df2 = self.load_data(self.paths['test_data'])
-        self.model = None
         self.feature_names = []
-        possible_model_paths = [
-            self.paths['model'],  
-            Path("src/models/final_manual_model.pkl"), 
-            Path("saved_models/final_manual_model.pkl"),
-            Path("final_manual_model.pkl")
-        ] 
-        model_loaded = False
-        for model_path in possible_model_paths:
-            if model_path.exists():
-                try:
-                    with open(model_path, 'rb') as f:
-                        model_data = pickle.load(f)
-                        self.model = model_data['model']
-                        self.feature_names = model_data.get('feature_names', [])
-                    st.session_state.model_loaded = True
-                    model_loaded = True
-                    print(f"✅ Model loaded from: {model_path}")
-                    break
-                except Exception as e:
-                    print(f"❌ Failed to load model from {model_path}: {e}")
-        
-        if not model_loaded:
-            st.session_state.model_loaded = False
-            print("❌ Model not found in any location")
+
 
     def calculate_real_metrics(self):
         if self.df1 is None:
@@ -408,7 +383,7 @@ class AdminDashboardTab(BaseTab):
 
     def run(self):
         """Main method to run the admin dashboard"""
-        self.load_model_and_data()
+        self.load_datasets()
         
         # Navigation sidebar
         st.sidebar.title("🎯 CAIRE Analytics")
@@ -425,16 +400,7 @@ class AdminDashboardTab(BaseTab):
         # Only show model status if it exists, don't show negative status
         if hasattr(self, 'model') and self.model is not None:
             st.sidebar.success("🤖 Model: Ready for predictions")
-        
-        st.sidebar.markdown("---")
-        
-        # Quick actions
-        st.sidebar.subheader("🚀 Quick Actions")
-        if st.sidebar.button("🔄 Refresh Data", use_container_width=True):
-            st.rerun()
-        
-        if st.sidebar.button("📊 Generate Report", use_container_width=True):
-            success_box("Report generation started...")
+                
         
         # Main content
         self.render_dashboard_overview()
@@ -527,7 +493,7 @@ class SegmentAnalysisTab(BaseTab):
         super().__init__("👥 Segments")
 
     def run(self):
-        create_header("Enhanced Customer Segmentation", "Intelligent Behavior-Based Segments", "👥")
+        create_header("Customer Segmentation", "Intelligent Behavior-Based Segments", "👥")
         
         # Try to import and use the segmentation tab
         try:
