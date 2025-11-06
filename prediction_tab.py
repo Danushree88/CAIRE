@@ -4,672 +4,477 @@ import numpy as np
 import pickle
 import os
 import sys
+import json
 from datetime import datetime
 
-# -----------------------------
-# Define directories
-# -----------------------------
+# ==================== SETUP ====================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODELS_DIR = BASE_DIR  # assuming model is in the same folder
+DATA_DIR = os.path.join(BASE_DIR, "data")
+TEST_DATA_DIR = os.path.join(BASE_DIR, "test_data")
+MODELS_DIR = BASE_DIR
 
-# -----------------------------
-# Import custom model classes
-# -----------------------------
-from model import GradientBoostingClassifierManual, RandomForestManual, DecisionTreeClassifierManual, LogisticRegressionGD, KNNClassifier
+# Add the project root to Python path
+sys.path.append(BASE_DIR)
 
-# -----------------------------
-# Register module for unpickling
-# -----------------------------
-import model as model_module
-sys.modules['model'] = model_module
+# ==================== IMPORT MODEL CLASSES ====================
+try:
+    # Import custom model classes
+    from model import (
+        GradientBoostingClassifierManual, 
+        RandomForestManual, 
+        DecisionTreeClassifierManual, 
+        LogisticRegressionGD, 
+        KNNClassifier
+    )
+    
+    # Register module for unpickling
+    import model as model_module
+    sys.modules['model'] = model_module
+    sys.modules['__main__'] = model_module
+    
+except ImportError as e:
+    st.error(f"❌ Failed to import model classes: {e}")
+    st.stop()
 
-# -----------------------------
-# Load model with better error handling
-# -----------------------------
-model_path = os.path.join(MODELS_DIR, "final_manual_model.pkl")
-
-def load_model():
-    """Load model with proper error handling"""
-    try:
-        # First try normal loading
-        with open(model_path, "rb") as f:
-            model_data = pickle.load(f)
-        
-        # Extract model and feature names from the saved dictionary
-        if isinstance(model_data, dict) and "model" in model_data:
-            loaded_model = model_data["model"]
-            if "feature_names" in model_data:
-                loaded_model.feature_names = model_data["feature_names"]
-            st.success("✅ Model loaded successfully from dictionary!")
-        else:
-            loaded_model = model_data
-            st.success("✅ Model loaded successfully!")
-            
-        return loaded_model
-        
-    except (ModuleNotFoundError, AttributeError) as e:
-        st.warning(f"⚠️ First load attempt failed: {e}. Trying alternative method...")
-        try:
-            # Register the module and try again
-            import model
-            sys.modules['__main__'] = model
-            sys.modules['model'] = model
-            
-            with open(model_path, "rb") as f:
-                model_data = pickle.load(f)
-            
-            # Extract model and feature names
-            if isinstance(model_data, dict) and "model" in model_data:
-                loaded_model = model_data["model"]
-                if "feature_names" in model_data:
-                    loaded_model.feature_names = model_data["feature_names"]
-                st.success("✅ Model loaded successfully with alternative method!")
-            else:
-                loaded_model = model_data
-                st.success("✅ Model loaded successfully with alternative method!")
+# ==================== LOAD MODEL ====================
+@st.cache_resource
+def load_trained_model():
+    """Load the pickled trained model"""
+    possible_paths = [
+        os.path.join(BASE_DIR, "final_manual_model.pkl"),
+        os.path.join(BASE_DIR, "saved_models", "final_manual_model.pkl"),
+        os.path.join(os.path.dirname(BASE_DIR), "final_manual_model.pkl"),
+        os.path.join(os.path.dirname(BASE_DIR), "saved_models", "final_manual_model.pkl"),
+        "final_manual_model.pkl"
+    ]
+    
+    for model_path in possible_paths:
+        if os.path.exists(model_path):
+            try:
+                with open(model_path, "rb") as f:
+                    model_data = pickle.load(f)
                 
-            return loaded_model
-            
-        except Exception as e2:
-            st.error(f"❌ Alternative loading failed: {e2}")
-            return None
-            
-    except FileNotFoundError:
-        st.error(f"❌ Model file not found at: {model_path}")
-        st.info("📁 Files in directory:")
-        for file in os.listdir(BASE_DIR):
-            if file.endswith('.pkl'):
-                st.write(f"- `{file}`")
-        return None
-        
-    except Exception as e:
-        st.error(f"❌ Failed to load model: {e}")
-        return None
-
-loaded_model = load_model()
-
-# =========================================================
-# Prediction Engine Class
-# =========================================================
-class PredictionEngine:
-    def __init__(self):
-        self.model = loaded_model
-        self.feature_names = self._get_feature_names()
-        self.model_type = type(self.model).__name__ if self.model else None
-
-    def _get_feature_names(self):
-        """Safely get feature names from model"""
-        if not self.model:
-            return []
-        
-        # Try different ways to get feature names
-        if hasattr(self.model, 'feature_names') and self.model.feature_names:
-            return self.model.feature_names
-        elif hasattr(self.model, 'feature_names_'):
-            return self.model.feature_names_
-        elif hasattr(self.model, 'get_feature_names'):
-            return self.model.get_feature_names()
-        else:
-            # Return default feature names based on common features
-            st.warning("⚠️ Using default feature names - model may not have feature_names attribute")
-            return [
-                'engagement_score', 'num_items_carted', 'cart_value', 
-                'session_duration', 'num_pages_viewed', 'scroll_depth',
-                'return_user', 'if_payment_page_reached', 'discount_applied', 
-                'has_viewed_shipping_info', 'device_mobile', 'device_desktop',
-                'time_of_day_morning', 'time_of_day_afternoon', 'time_of_day_evening'
-            ]
-
-    # -----------------------------
-    # Feature descriptions
-    # -----------------------------
-    def get_feature_descriptions(self):
-        descriptions = {
-            'engagement_score': 'User engagement level (-1 to 1)',
-            'num_items_carted': 'Number of items in cart',
-            'cart_value': 'Total value of cart (normalized)',
-            'session_duration': 'Duration of session in seconds',
-            'num_pages_viewed': 'Number of pages viewed',
-            'scroll_depth': 'How far user scrolled (0-1)',
-            'return_user': 'Is returning user (0/1)',
-            'if_payment_page_reached': 'Reached payment page (0/1)',
-            'discount_applied': 'Discount applied (0/1)',
-            'has_viewed_shipping_info': 'Viewed shipping info (0/1)'
-        }
-        
-        # Add device and time features dynamically
-        for feature in self.feature_names:
-            if feature.startswith('device_') and feature not in descriptions:
-                descriptions[feature] = f'Using {feature.replace("device_", "")} device (0/1)'
-            elif feature.startswith('time_of_day_') and feature not in descriptions:
-                descriptions[feature] = f'Session in {feature.replace("time_of_day_", "")} (0/1)'
-        
-        return descriptions
-
-    def create_feature_inputs(self):
-        """Create input fields for all features used in the model"""
-        feature_values = {}
-        
-        st.subheader("📋 Enter Session Features")
-        
-        # Group features by category
-        numeric_features = [f for f in self.feature_names if f not in ['return_user', 'if_payment_page_reached', 'discount_applied', 'has_viewed_shipping_info'] 
-                           and not f.startswith('device_') and not f.startswith('time_of_day_')]
-        
-        binary_features = [f for f in self.feature_names if f in ['return_user', 'if_payment_page_reached', 'discount_applied', 'has_viewed_shipping_info']]
-        
-        device_features = [f for f in self.feature_names if f.startswith('device_')]
-        time_features = [f for f in self.feature_names if f.startswith('time_of_day_')]
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # Numeric features
-            for feature in numeric_features:
-                if feature == 'engagement_score':
-                    feature_values[feature] = st.slider(
-                        "Engagement Score", -1.0, 1.0, 0.0, 0.1,
-                        help="User engagement level from -1 (low) to 1 (high)"
-                    )
-                elif feature == 'cart_value':
-                    feature_values[feature] = st.number_input(
-                        "Cart Value", 0.0, 10000.0, 500.0, 50.0,
-                        help="Total value of items in cart"
-                    )
-                elif feature == 'num_items_carted':
-                    feature_values[feature] = st.number_input(
-                        "Number of Items in Cart", 1, 50, 2,
-                        help="Total items added to cart"
-                    )
-                elif feature == 'session_duration':
-                    feature_values[feature] = st.number_input(
-                        "Session Duration (seconds)", 0, 3600, 300, 30,
-                        help="How long the user stayed on site"
-                    )
-                elif feature == 'num_pages_viewed':
-                    feature_values[feature] = st.number_input(
-                        "Pages Viewed", 1, 100, 8, 1,
-                        help="Number of different pages visited"
-                    )
-                elif feature == 'scroll_depth':
-                    feature_values[feature] = st.slider(
-                        "Scroll Depth", 0.0, 1.0, 0.5, 0.1,
-                        help="How far user scrolled (0=none, 1=full page)"
-                    )
+                if isinstance(model_data, dict):
+                    model = model_data["model"]
+                    feature_names = model_data.get("feature_names", [])
+                    best_params = model_data.get("best_params", {})
+                    return model, feature_names, best_params
                 else:
-                    # Generic numeric input for other features
-                    feature_values[feature] = st.number_input(
-                        f"{feature.replace('_', ' ').title()}", 
-                        0.0, 1000.0, 0.0, 0.1
-                    )
-        
-        with col2:
-            # Binary features
-            for feature in binary_features:
-                if feature == 'return_user':
-                    feature_values[feature] = st.selectbox(
-                        "Return User", [0, 1], format_func=lambda x: "New User" if x == 0 else "Return User"
-                    )
-                elif feature == 'if_payment_page_reached':
-                    feature_values[feature] = st.selectbox(
-                        "Reached Payment Page", [0, 1], format_func=lambda x: "No" if x == 0 else "Yes"
-                    )
-                elif feature == 'discount_applied':
-                    feature_values[feature] = st.selectbox(
-                        "Discount Applied", [0, 1], format_func=lambda x: "No" if x == 0 else "Yes"
-                    )
-                elif feature == 'has_viewed_shipping_info':
-                    feature_values[feature] = st.selectbox(
-                        "Viewed Shipping Info", [0, 1], format_func=lambda x: "No" if x == 0 else "Yes"
-                    )
-            
-            # Device type (handle one-hot encoded features)
-            if device_features:
-                device_options = [f.replace('device_', '') for f in device_features]
-                selected_device = st.selectbox("Device Type", device_options)
-                for device_feature in device_features:
-                    feature_values[device_feature] = 1 if device_feature == f"device_{selected_device}" else 0
-            
-            # Time of day (handle one-hot encoded features)
-            if time_features:
-                time_options = [f.replace('time_of_day_', '') for f in time_features]
-                selected_time = st.selectbox("Time of Day", time_options)
-                for time_feature in time_features:
-                    feature_values[time_feature] = 1 if time_feature == f"time_of_day_{selected_time}" else 0
-        
-        return feature_values
+                    return model_data, [], {}
+                    
+            except Exception as e:
+                st.error(f"❌ Failed to load model from {model_path}: {e}")
+                continue
+    
+    st.error("❌ Model file not found in any expected location")
+    return None, [], {}
 
-    def debug_model(self):
-        """Debug function to identify model issues"""
-        st.markdown("### 🐛 Debug Information")
-        
-        if not self.model:
-            st.error("❌ No model loaded")
-            return
-            
-        st.write(f"**Model Type**: {type(self.model)}")
-        st.write(f"**Model Class**: {self.model.__class__.__name__}")
-        st.write(f"**Feature Names**: {self.feature_names}")
-        st.write(f"**Number of Features**: {len(self.feature_names)}")
-        
-        # Check available methods
-        methods = [method for method in dir(self.model) if not method.startswith('_') and callable(getattr(self.model, method))]
-        st.write(f"**Available Methods**: {methods}")
-        
-        # Test prediction with dummy data
+# ==================== LOAD TEST DATA ====================
+@st.cache_data
+def load_test_data():
+    """Load the preprocessed test data"""
+    test_data_path = os.path.join(TEST_DATA_DIR, "test_data_for_prediction.csv")
+    
+    if not os.path.exists(test_data_path):
+        st.error(f"❌ Test data file not found at: {test_data_path}")
+        return None
+    
+    try:
+        test_data = pd.read_csv(test_data_path)
+        return test_data
+    except Exception as e:
+        st.error(f"❌ Failed to load test data: {e}")
+        return None
+
+# ==================== PREDICTION ENGINE ====================
+class PredictionEngine:
+    """Handles predictions using preprocessed data"""
+    
+    def __init__(self):
+        self.data_dir = DATA_DIR
+    
+    def make_prediction(self, model, feature_names, user_data):
+        """Make prediction for a single user using preprocessed data"""
         try:
-            dummy_features = np.zeros((1, len(self.feature_names)))
-            st.write(f"**Dummy input shape**: {dummy_features.shape}")
-            
-            if hasattr(self.model, 'predict_proba'):
-                st.success("✅ Model has predict_proba method")
-                probs = self.model.predict_proba(dummy_features)
-                st.write(f"**Raw probabilities**: {probs}")
-                st.write(f"**Probability shape**: {getattr(probs, 'shape', 'No shape')}")
-                st.write(f"**Probability type**: {type(probs)}")
-                
-                # Test the actual probability extraction
-                test_prob = self._extract_probability(probs)
-                st.write(f"**Extracted probability**: {test_prob}")
-                
-            else:
-                st.error("❌ Model has no predict_proba method")
-                if hasattr(self.model, 'predict'):
-                    st.info("ℹ️ Model has predict method, will use that instead")
-                    pred = self.model.predict(dummy_features)
-                    st.write(f"**Raw prediction**: {pred}")
-                
-        except Exception as e:
-            st.error(f"❌ Prediction test failed: {e}")
-            import traceback
-            st.text(traceback.format_exc())
-
-    def render_single_prediction(self):
-        """Render single prediction interface"""
-        st.markdown("### 🔮 Single Session Prediction")
-        
-        if not self.model:
-            st.error("Model not available. Please ensure final_manual_model.pkl exists.")
-            return
-        
-        feature_values = self.create_feature_inputs()
-
-        # Predict button
-        if st.button("🎯 Predict Abandonment Probability", type="primary", use_container_width=True):
-            self.make_prediction(feature_values)
-
-    def make_prediction(self, feature_values):
-        """Make prediction based on input features"""
-        try:
-            # Create feature vector in correct order
+            # Create feature vector aligned with model's expected features
             feature_vector = []
-            for feature in self.feature_names:
-                feature_vector.append(feature_values.get(feature, 0))
+            for feature in feature_names:
+                if feature in user_data:
+                    feature_vector.append(user_data[feature])
+                else:
+                    feature_vector.append(0)  # Missing features default to 0
             
             feature_vector = np.array(feature_vector).reshape(1, -1)
             
-            # Get prediction probability with robust handling
-            if hasattr(self.model, 'predict_proba'):
-                raw_probs = self.model.predict_proba(feature_vector)
-                prob_abandon = self._extract_probability(raw_probs)
-            else:
-                # Fallback to predict method
-                prediction = self.model.predict(feature_vector)
-                prob_abandon = float(prediction[0]) if prediction[0] in [0, 1] else 0.5
-                st.warning("⚠️ Using predict() instead of predict_proba() - probabilities may not be accurate")
-            
-            prob_percent = prob_abandon * 100
-            
-            # Display results
-            st.markdown("---")
-            st.subheader("🎯 Prediction Results")
-            
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                st.metric(
-                    "Abandonment Probability", 
-                    f"{prob_percent:.1f}%",
-                    delta=f"High risk" if prob_percent > 50 else "Low risk",
-                    delta_color="inverse"
-                )
-            
-            with col2:
-                prediction = 1 if prob_abandon > 0.5 else 0
-                status = "🚨 LIKELY TO ABANDON" if prediction == 1 else "✅ LIKELY TO COMPLETE"
-                st.metric("Prediction", status)
-            
-            with col3:
-                confidence = max(prob_abandon, 1-prob_abandon) * 100
-                st.metric("Model Confidence", f"{confidence:.1f}%")
-            
-            # Risk level indicator
-            st.markdown("### 📊 Risk Assessment")
-            if prob_percent >= 70:
-                st.error("🔴 **HIGH RISK**: Strong likelihood of cart abandonment. Immediate recovery action recommended.")
-                st.info("💡 **Suggested Action**: Send immediate discount email, free shipping offer, or personal follow-up")
-            elif prob_percent >= 40:
-                st.warning("🟡 **MEDIUM RISK**: Moderate chance of abandonment. Consider proactive engagement.")
-                st.info("💡 **Suggested Action**: Send reminder email, highlight product benefits, or offer chat support")
-            else:
-                st.success("🟢 **LOW RISK**: Likely to complete purchase. Standard monitoring recommended.")
-                st.info("💡 **Suggested Action**: Normal follow-up sequence, focus on customer satisfaction")
-            
-            # Feature importance insight
-            st.markdown("### 🔍 Key Influencing Factors")
-            top_features = self.get_top_influencing_factors(feature_values, prob_percent)
-            for feature, impact, value in top_features:
-                st.write(f"• **{feature}**: {impact} (Current: {value})")
+            # Get prediction probability
+            if hasattr(model, 'predict_proba'):
+                prob = model.predict_proba(feature_vector)
                 
+                # Handle different probability formats
+                if isinstance(prob, np.ndarray):
+                    if prob.ndim == 2 and prob.shape[1] == 2:
+                        prob_abandon = float(prob[0, 1])
+                    elif prob.ndim == 1:
+                        prob_abandon = float(prob[0])
+                    else:
+                        prob_abandon = float(prob.flat[0])
+                else:
+                    prob_abandon = float(prob)
+            else:
+                # Fallback to binary prediction
+                pred = model.predict(feature_vector)
+                prob_abandon = float(pred[0])
+                
+            return prob_abandon
+            
         except Exception as e:
             st.error(f"❌ Prediction error: {e}")
-            st.info("💡 Check the debug information for more details")
-            import traceback
-            st.text(traceback.format_exc())
+            return 0.5  # Default to uncertain
 
-    def _extract_probability(self, raw_probs):
-        """Extract abandonment probability from various probability formats"""
-        try:
-            # Handle GradientBoostingClassifierManual's predict_proba issue
-            if hasattr(self.model, '__class__') and self.model.__class__.__name__ == 'GradientBoostingClassifierManual':
-                # For your GBM implementation, predict_proba might return single values
-                if isinstance(raw_probs, (int, float, np.number)):
-                    return float(raw_probs)
-                elif hasattr(raw_probs, '__len__') and len(raw_probs) == 1:
-                    return float(raw_probs[0])
-            
-            # Convert to numpy array for consistent handling
-            if hasattr(raw_probs, 'shape'):
-                probs_array = raw_probs
-            else:
-                probs_array = np.array(raw_probs)
-            
-            # Handle different shapes
-            if probs_array.shape == (1, 2):
-                # Standard sklearn format: [[prob_class0, prob_class1]]
-                return float(probs_array[0, 1])
-            elif probs_array.shape == (1, 1):
-                # Single probability output
-                return float(probs_array[0, 0])
-            elif probs_array.shape == (2,):
-                # Single sample with two classes
-                return float(probs_array[1])
-            elif probs_array.shape == (1,):
-                # Single probability
-                return float(probs_array[0])
-            elif len(probs_array) == 1 and hasattr(probs_array[0], '__len__'):
-                # Nested array
-                inner = probs_array[0]
-                if len(inner) == 2:
-                    return float(inner[1])
-                else:
-                    return float(inner[0])
-            else:
-                # Fallback: use first element
-                return float(probs_array.flat[0])
-                
-        except Exception as e:
-            st.warning(f"⚠️ Probability extraction warning: {e}. Using default 0.5")
-            return 0.5
-
-    def get_top_influencing_factors(self, feature_values, prob_percent):
-        """Identify top factors influencing the prediction"""
-        factors = []
+    def run_batch_predictions(self, model, feature_names, test_data):
+        """Run predictions for all users in test data"""
+        results = []
         
-        # Analyze key features
-        if feature_values.get('if_payment_page_reached', 0) == 0 and prob_percent > 50:
-            factors.append(("Payment Page Not Reached", "High abandonment risk", "No"))
-        
-        if feature_values.get('engagement_score', 0) < 0:
-            factors.append(("Low Engagement Score", "Increased abandonment likelihood", f"{feature_values.get('engagement_score', 0):.2f}"))
-            
-        if feature_values.get('return_user', 0) == 0:
-            factors.append(("New User", "Higher abandonment tendency", "Yes"))
-            
-        if feature_values.get('discount_applied', 0) == 0 and feature_values.get('cart_value', 0) > 1000:
-            factors.append(("High Cart Value, No Discount", "Price sensitivity risk", f"${feature_values.get('cart_value', 0):.2f}"))
-            
-        if feature_values.get('session_duration', 0) < 60:
-            factors.append(("Short Session Duration", "Lack of engagement", f"{feature_values.get('session_duration', 0)}s"))
-        
-        if feature_values.get('num_pages_viewed', 0) < 3:
-            factors.append(("Few Pages Viewed", "Limited exploration", f"{feature_values.get('num_pages_viewed', 0)} pages"))
-            
-        if len(factors) == 0:
-            factors.append(("Balanced Feature Profile", "Moderate risk factors", "Good"))
-            
-        return factors[:4]
-
-    def render_batch_prediction(self):
-        """Render batch prediction interface"""
-        st.markdown("### 📊 Batch Prediction")
-        
-        if not self.model:
-            st.error("Model not available for batch predictions.")
-            return
-        
-        st.info("""
-        **Upload a CSV file with session data for batch predictions.**
-        The file should contain the same features used during model training.
-        """)
-        
-        uploaded_file = st.file_uploader(
-            "Upload CSV file for batch prediction", 
-            type=['csv'],
-            help="CSV file with session data features"
-        )
-        
-        if uploaded_file is not None:
+        for idx, user_row in test_data.iterrows():
             try:
-                # Read uploaded data
-                batch_data = pd.read_csv(uploaded_file)
-                st.success(f"✅ File loaded: {len(batch_data)} records")
+                user_data = user_row.to_dict()
+                prob_abandon = self.make_prediction(model, feature_names, user_data)
                 
-                # Show data preview
-                with st.expander("📋 Data Preview"):
-                    st.dataframe(batch_data.head(), use_container_width=True)
+                results.append({
+                    'session_id': user_data.get('session_id', f'Session_{idx}'),
+                    'user_id': user_data.get('user_id', f'User_{idx}'),
+                    'abandonment_probability': prob_abandon,
+                    'predicted_abandonment': 1 if prob_abandon > 0.5 else 0,
+                    'risk_level': 'HIGH' if prob_abandon >= 0.7 else 'MEDIUM' if prob_abandon >= 0.4 else 'LOW'
+                })
                 
-                # Check for required features
-                missing_features = set(self.feature_names) - set(batch_data.columns)
-                if missing_features:
-                    st.warning(f"⚠️ Missing features: {list(missing_features)}")
-                    st.info("Please ensure your CSV contains all required features.")
-                else:
-                    if st.button("🚀 Run Batch Predictions", type="primary"):
-                        self.process_batch_predictions(batch_data)
-                        
             except Exception as e:
-                st.error(f"❌ Error processing file: {e}")
-
-    def process_batch_predictions(self, batch_data):
-        """Process batch predictions"""
-        try:
-            with st.spinner("Running predictions..."):
-                # Prepare features
-                X_batch = batch_data[self.feature_names]
-                
-                # Make predictions
-                if hasattr(self.model, 'predict_proba'):
-                    probabilities = self.model.predict_proba(X_batch)
-                    # Extract abandonment probabilities
-                    abandonment_probs = np.array([self._extract_probability(prob) for prob in probabilities])
-                else:
-                    # Fallback to predict method
-                    predictions = self.model.predict(X_batch)
-                    abandonment_probs = predictions.astype(float)
-                    st.warning("⚠️ Using predict() instead of predict_proba() for batch predictions")
-                
-                predictions_binary = (abandonment_probs > 0.5).astype(int)
-                
-                # Create results dataframe
-                results_df = batch_data.copy()
-                results_df['abandonment_probability'] = abandonment_probs
-                results_df['predicted_abandonment'] = predictions_binary
-                results_df['risk_level'] = results_df['abandonment_probability'].apply(
-                    lambda x: 'HIGH' if x >= 0.7 else 'MEDIUM' if x >= 0.4 else 'LOW'
-                )
-                
-                # Display results
-                st.markdown("### 📈 Batch Prediction Results")
-                
-                # Summary statistics
-                col1, col2, col3, col4 = st.columns(4)
-                
-                with col1:
-                    st.metric("Total Sessions", len(results_df))
-                
-                with col2:
-                    high_risk = (results_df['risk_level'] == 'HIGH').sum()
-                    st.metric("High Risk Sessions", high_risk)
-                
-                with col3:
-                    abandon_rate = results_df['predicted_abandonment'].mean() * 100
-                    st.metric("Predicted Abandonment Rate", f"{abandon_rate:.1f}%")
-                
-                with col4:
-                    avg_prob = results_df['abandonment_probability'].mean() * 100
-                    st.metric("Average Risk", f"{avg_prob:.1f}%")
-                
-                # Show results table
-                st.dataframe(results_df, use_container_width=True)
-                
-                # Download results
-                csv = results_df.to_csv(index=False)
-                st.download_button(
-                    label="📥 Download Prediction Results",
-                    data=csv,
-                    file_name=f"abandonment_predictions_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-                    mime="text/csv",
-                    use_container_width=True
-                )
-                
-        except Exception as e:
-            st.error(f"❌ Batch prediction error: {e}")
-            import traceback
-            st.text(traceback.format_exc())
-
-    def render_model_info(self):
-        """Render model information"""
-        st.markdown("### 🔧 Model Information")
+                st.warning(f"Error processing user {idx}: {e}")
+                results.append({
+                    'session_id': f'Session_{idx}',
+                    'user_id': f'User_{idx}',
+                    'abandonment_probability': 0.5,
+                    'predicted_abandonment': 0,
+                    'risk_level': 'MEDIUM'
+                })
         
-        if not self.model:
-            st.error("Model not loaded. Please check if final_manual_model.pkl exists.")
-            return
-        
-        st.success("✅ Prediction model loaded and ready!")
-        
-        # Model details
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.subheader("Model Details")
-            st.write(f"**Model Type**: {self.model_type}")
-            st.write(f"**Features Used**: {len(self.feature_names)}")
-            st.write(f"**Available Methods**:")
-            methods = [method for method in dir(self.model) if not method.startswith('_') and callable(getattr(self.model, method))]
-            for method in methods[:6]:
-                st.write(f"  - {method}()")
-            
-            # Show first few features
-            st.write(f"**Features (first 10)**:")
-            for feature in self.feature_names[:10]:
-                st.write(f"  - {feature}")
-            if len(self.feature_names) > 10:
-                st.write(f"  - ... and {len(self.feature_names) - 10} more")
-        
-        with col2:
-            st.subheader("Prediction Guidelines")
-            st.write("**🔴 HIGH RISK**: >70% - Immediate action needed")
-            st.write("**🟡 MEDIUM RISK**: 40-70% - Proactive engagement") 
-            st.write("**🟢 LOW RISK**: <40% - Standard monitoring")
-            st.write("")
-            st.write(f"**Model Class**: {self.model.__class__.__name__}")
-            st.write(f"**Has predict_proba**: {'✅ Yes' if hasattr(self.model, 'predict_proba') else '❌ No'}")
-            st.write(f"**Has predict**: {'✅ Yes' if hasattr(self.model, 'predict') else '❌ No'}")
-        
-        # Feature descriptions
-        with st.expander("📋 Feature Descriptions"):
-            descriptions = self.get_feature_descriptions()
-            for feature in self.feature_names:
-                description = descriptions.get(feature, "No description available")
-                st.write(f"**{feature}**: {description}")
+        return pd.DataFrame(results)
 
     def run(self):
-        """Main method to run the prediction engine"""
-        st.header("🎯 Cart Abandonment Prediction Engine")
-        st.markdown("Predict which users are likely to abandon their shopping carts in real-time")
+        """Main method to run the prediction interface"""
+        st.title("🛒 Cart Abandonment Prediction System")
+        st.markdown("Predict which users are likely to abandon their shopping carts")
         
-        # Add debug option in sidebar
-        with st.sidebar:
-            st.markdown("---")
-            if st.button("🛠️ Debug Model", use_container_width=True):
-                self.debug_model()
+        # Load model
+        model, feature_names, best_params = load_trained_model()
         
-        if not self.model:
-            st.error("""
-            **Model not loaded**. Please ensure:
-            - `final_manual_model.pkl` exists in the current directory
-            - The model file was created with compatible classes
-            - All required classes are defined in `model.py`
-            """)
-            
-            # Show available pickle files
-            st.info("📁 Available .pkl files in directory:")
-            pkl_files = [f for f in os.listdir(BASE_DIR) if f.endswith('.pkl')]
-            if pkl_files:
-                for file in pkl_files:
-                    st.write(f"- `{file}`")
-            else:
-                st.write("No .pkl files found")
+        if model is None:
+            st.error("Model not loaded. Please ensure the model file exists.")
             return
         
-        # Create tabs for different prediction modes
-        pred_tabs = st.tabs(["Single Prediction", "Batch Prediction", "Model Info"])
+        # Load test data
+        test_data = load_test_data()
         
-        with pred_tabs[0]:
-            self.render_single_prediction()
+        if test_data is None:
+            st.error("Test data not loaded. Please ensure test_data_for_prediction.csv exists.")
+            return
+        
+        # Show model info in sidebar
+        with st.sidebar:
+            st.header("ℹ️ Model Information")
+            if best_params:
+                model_type = best_params.get("model_type", "Unknown")
+                st.success(f"**Model**: {model_type}")
+                
+                performance = best_params.get("performance", {})
+                if performance:
+                    st.metric("ROC-AUC", f"{performance.get('roc_auc', 0):.3f}")
+                    st.metric("F1 Score", f"{performance.get('f1', 0):.3f}")
             
-        with pred_tabs[1]:
-            self.render_batch_prediction()
+            st.info(f"**Features**: {len(feature_names)}")
+            st.success(f"**Test Data**: {len(test_data)} sessions")
             
-        with pred_tabs[2]:
-            self.render_model_info()
+            # Show data overview
+            st.header("📊 Data Overview")
+            if 'abandoned' in test_data.columns:
+                actual_abandoned = test_data['abandoned'].sum()
+                st.metric("Actual Abandoned", actual_abandoned)
+            if 'return_user' in test_data.columns:
+                return_users = test_data['return_user'].sum()
+                st.metric("Return Users", return_users)
+        
+        # Main interface
+        user_selection_ui(model, feature_names, test_data, self)
 
-# =========================================================
-# Main execution
-# =========================================================
-def main():
-    st.set_page_config(
-        page_title="Cart Abandonment Predictor",
-        page_icon="🎯",
-        layout="wide",
-        initial_sidebar_state="expanded"
+# ==================== USER SELECTION UI ====================
+def user_selection_ui(model, feature_names, test_data, prediction_engine):
+    """UI for selecting and predicting specific users from test data"""
+    
+    st.subheader("👥 User Selection & Prediction")
+    
+    # Display test data overview
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total Users", len(test_data))
+    with col2:
+        abandoned_count = test_data['abandoned'].sum() if 'abandoned' in test_data.columns else "N/A"
+        st.metric("Actual Abandoned", abandoned_count)
+    with col3:
+        return_users = test_data['return_user'].sum() if 'return_user' in test_data.columns else "N/A"
+        st.metric("Return Users", return_users)
+    with col4:
+        avg_cart = test_data['cart_value'].mean() if 'cart_value' in test_data.columns else "N/A"
+        st.metric("Avg Cart Value", f"${avg_cart:.2f}" if isinstance(avg_cart, (int, float)) else avg_cart)
+    
+    # User selection
+    st.markdown("### 🎯 Select User for Detailed Prediction")
+    
+    # Create user selection options - SIMPLIFIED
+    user_options = []
+    for idx, row in test_data.iterrows():
+        user_id = row.get('user_id', f'User_{idx}')
+        session_id = row.get('session_id', f'Session_{idx}')
+        
+        # Simple display text with only user and session ID
+        display_text = f"User: {user_id} | Session: {session_id}"
+        
+        user_options.append((idx, display_text))
+    
+    # User selection dropdown
+    selected_user_idx = st.selectbox(
+        "Choose a user to analyze:",
+        options=[opt[0] for opt in user_options],
+        format_func=lambda x: next(opt[1] for opt in user_options if opt[0] == x),
+        key="user_selector"
     )
     
-    # Add custom CSS
-    st.markdown("""
-    <style>
-    .main-header {
-        font-size: 2.5rem;
-        color: #1f77b4;
-        text-align: center;
-        margin-bottom: 1rem;
-    }
-    .sub-header {
-        font-size: 1.5rem;
-        color: #ff7f0e;
-        margin-bottom: 2rem;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+    # Get selected user data
+    selected_user_data = test_data.iloc[selected_user_idx].to_dict()
     
-    # App title
-    st.markdown('<div class="main-header">🛒 Cart Abandonment Prediction System</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Real-time ML-powered insights to reduce cart abandonment</div>', unsafe_allow_html=True)
+    # Display user details and make prediction
+    if selected_user_data:
+        display_user_prediction(model, feature_names, selected_user_data, prediction_engine)
     
-    # Initialize and run prediction engine
+    # Batch predictions section - FIXED
+    st.markdown("---")
+    st.subheader("📊 Batch Predictions")
+    
+    if st.button("🚀 Run Predictions for All Users", type="primary", use_container_width=True):
+        with st.spinner(f"Running predictions for {len(test_data)} users..."):
+            try:
+                # Run batch predictions
+                batch_results = prediction_engine.run_batch_predictions(model, feature_names, test_data)
+                
+                # Merge with original test data to get all columns
+                final_results = test_data.merge(
+                    batch_results[['session_id', 'user_id', 'abandonment_probability', 'predicted_abandonment', 'risk_level']], 
+                    on=['session_id', 'user_id'], 
+                    how='left'
+                )
+                
+                # Display batch results
+                display_batch_results(final_results)
+                
+            except Exception as e:
+                st.error(f"❌ Batch prediction failed: {e}")
+
+def display_user_prediction(model, feature_names, user_data, prediction_engine):
+    """Display detailed prediction for a single user"""
+    
+    st.markdown("---")
+    st.subheader(f"🎯 Prediction for User: {user_data.get('user_id', 'Unknown')}")
+    
+    # SIMPLIFIED User information - Only show IDs
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("**User Information**")
+        st.write(f"**Session ID**: {user_data.get('session_id', 'N/A')}")
+        st.write(f"**User ID**: {user_data.get('user_id', 'N/A')}")
+        if 'abandoned' in user_data:
+            st.write(f"**Actual Outcome**: {'🚨 Abandoned' if user_data['abandoned'] == 1 else '✅ Completed'}")
+    
+    with col2:
+        st.markdown("**Key Metrics**")
+        st.write(f"**Return User**: {'Yes' if user_data.get('return_user', 0) == 1 else 'No'}")
+        st.write(f"**Cart Value**: ${user_data.get('cart_value', 0):.2f}")
+        st.write(f"**Engagement Score**: {user_data.get('engagement_score', 'N/A')}")
+    
+    # Make prediction
+    prob_abandon = prediction_engine.make_prediction(model, feature_names, user_data)
+    prob_percent = prob_abandon * 100
+    
+    # Display prediction results
+    st.markdown("### 📊 Prediction Results")
+    
+    pred_col1, pred_col2, pred_col3 = st.columns(3)
+    
+    with pred_col1:
+        st.metric(
+            "Abandonment Probability", 
+            f"{prob_percent:.1f}%",
+            delta="High Risk" if prob_percent > 50 else "Low Risk",
+            delta_color="inverse"
+        )
+    
+    with pred_col2:
+        status = "🚨 LIKELY TO ABANDON" if prob_abandon > 0.5 else "✅ LIKELY TO COMPLETE"
+        st.metric("Prediction", status)
+    
+    with pred_col3:
+        confidence = max(prob_abandon, 1-prob_abandon) * 100
+        st.metric("Confidence", f"{confidence:.1f}%")
+    
+    # Risk assessment and recommendations
+    st.markdown("### 🚨 Risk Assessment & Recommendations")
+    
+    if prob_percent >= 70:
+        st.error("🔴 **HIGH RISK** - Strong likelihood of abandonment")
+        st.info("""
+        **💡 Recommended Actions:**
+        - Send immediate discount offer (10-15%)
+        - Offer free shipping
+        - Personal executive follow-up
+        - Stock availability alerts
+        """)
+    elif prob_percent >= 40:
+        st.warning("🟡 **MEDIUM RISK** - Moderate chance of abandonment")
+        st.info("""
+        **💡 Recommended Actions:**
+        - Send reminder email in 6 hours
+        - Highlight product benefits
+        - Offer chat support
+        - Social proof notifications
+        """)
+    else:
+        st.success("🟢 **LOW RISK** - Likely to complete purchase")
+        st.info("""
+        **💡 Recommended Actions:**
+        - Standard follow-up sequence
+        - Cross-sell recommendations
+        - Loyalty program invitation
+        """)
+    
+    # Show feature values (collapsible)
+    with st.expander("🔍 View Detailed Feature Values"):
+        # Create a better formatted feature display
+        important_features = [
+            'num_pages_viewed', 'num_items_carted', 'scroll_depth', 'session_duration',
+            'engagement_intensity', 'has_viewed_shipping_info', 'discount_applied',
+            'if_payment_page_reached', 'engagement_score'
+        ]
+        
+        feature_data = []
+        for feature in important_features:
+            if feature in user_data:
+                value = user_data[feature]
+                # Format values nicely
+                if 'duration' in feature:
+                    display_value = f"{value:.1f}s"
+                elif 'scroll' in feature:
+                    display_value = f"{value:.1f}%"
+                elif 'cart_value' in feature:
+                    display_value = f"${value:.2f}"
+                elif feature in ['engagement_score', 'engagement_intensity']:
+                    display_value = f"{value:.2f}"
+                else:
+                    display_value = value
+                
+                feature_data.append({"Feature": feature.replace('_', ' ').title(), "Value": display_value})
+        
+        if feature_data:
+            st.dataframe(pd.DataFrame(feature_data), use_container_width=True)
+        else:
+            st.info("No detailed feature data available")
+
+def display_batch_results(results_df):
+    """Display batch prediction results"""
+    
+    st.markdown("### 📈 Batch Prediction Summary")
+    
+    # Summary metrics
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        total_users = len(results_df)
+        st.metric("Total Users", total_users)
+    
+    with col2:
+        high_risk = (results_df['risk_level'] == 'HIGH').sum()
+        st.metric("High Risk Users", high_risk)
+    
+    with col3:
+        predicted_abandon = results_df['predicted_abandonment'].sum()
+        st.metric("Predicted to Abandon", predicted_abandon)
+    
+    with col4:
+        avg_prob = results_df['abandonment_probability'].mean() * 100
+        st.metric("Average Risk", f"{avg_prob:.1f}%")
+    
+    # Risk distribution
+    st.markdown("#### Risk Level Distribution")
+    risk_counts = results_df['risk_level'].value_counts()
+    
+    risk_col1, risk_col2, risk_col3 = st.columns(3)
+    with risk_col1:
+        st.metric("🟢 Low Risk", risk_counts.get('LOW', 0))
+    with risk_col2:
+        st.metric("🟡 Medium Risk", risk_counts.get('MEDIUM', 0))
+    with risk_col3:
+        st.metric("🔴 High Risk", risk_counts.get('HIGH', 0))
+    
+    # Display results table
+    st.markdown("#### Detailed Results")
+    
+    # Create display columns - SIMPLIFIED
+    display_columns = ['session_id', 'user_id', 'abandonment_probability', 'predicted_abandonment', 'risk_level']
+    
+    # Add actual outcome if available
+    if 'abandoned' in results_df.columns:
+        results_df['actual_outcome'] = results_df['abandoned'].apply(lambda x: 'Abandoned' if x == 1 else 'Completed')
+        display_columns.append('actual_outcome')
+    
+    # Add cart value if available
+    if 'cart_value' in results_df.columns:
+        display_columns.append('cart_value')
+    
+    # Format the display dataframe
+    display_df = results_df[display_columns].copy()
+    
+    # Format percentages
+    if 'abandonment_probability' in display_df.columns:
+        display_df['abandonment_probability'] = (display_df['abandonment_probability'] * 100).round(1).astype(str) + '%'
+    
+    # Format cart value
+    if 'cart_value' in display_df.columns:
+        display_df['cart_value'] = display_df['cart_value'].apply(lambda x: f"${x:.2f}" if isinstance(x, (int, float)) else x)
+    
+    st.dataframe(display_df, use_container_width=True, height=400)
+    
+    # Download results
+    csv = results_df.to_csv(index=False)
+    st.download_button(
+        "📥 Download All Predictions",
+        csv,
+        f"cart_abandonment_predictions_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+        "text/csv",
+        use_container_width=True
+    )
+    
+    # High-risk users section
+    high_risk_users = results_df[results_df['risk_level'] == 'HIGH']
+    if not high_risk_users.empty:
+        st.markdown("#### 🚨 High-Risk Users (Priority Action Required)")
+        
+        high_risk_display = high_risk_users[['session_id', 'user_id', 'abandonment_probability', 'cart_value']].copy()
+        high_risk_display['abandonment_probability'] = (high_risk_display['abandonment_probability'] * 100).round(1).astype(str) + '%'
+        if 'cart_value' in high_risk_display.columns:
+            high_risk_display['cart_value'] = high_risk_display['cart_value'].apply(lambda x: f"${x:.2f}" if isinstance(x, (int, float)) else x)
+        
+        st.dataframe(high_risk_display, use_container_width=True)
+
+# ==================== MAIN EXECUTION ====================
+if __name__ == "__main__":
+    # Initialize and run the prediction engine
     engine = PredictionEngine()
     engine.run()
-
-if __name__ == "__main__":
-    main()

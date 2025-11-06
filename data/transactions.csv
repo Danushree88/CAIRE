@@ -40,3 +40,45 @@ timestamp,session_id,user_id,product_id,product_name,category,event_type
 2025-11-06T15:55:50.296987,S1762424743,U7558,4,Skincare Kit,Beauty,add_to_cart
 2025-11-06T15:55:51.642880,S1762424743,U7558,5,Novel Collection,Books,add_to_cart
 2025-11-06T15:56:14.592360,S1762424767,U2648,4,Skincare Kit,Beauty,add_to_cart
+2025-11-06T19:23:46.189088,S1762437221,U4936,1,Smartphone,Electronics,add_to_cart
+2025-11-06T19:23:47.598836,S1762437221,U4936,5,Novel Collection,Books,add_to_cart
+2025-11-06T19:23:56.881002,S1762437221,U4936,6,T-Shirt,Clothing,add_to_cart
+2025-11-06T19:23:58.541929,S1762437221,U4936,21,Screen Protector,Electronics,add_to_cart
+2025-11-06T19:23:59.776562,S1762437221,U4936,13,Jeans,Clothing,add_to_cart
+2025-11-06T19:24:13.889485,S1762437251,U6456,1,Smartphone,Electronics,add_to_cart
+2025-11-06T19:24:15.489751,S1762437251,U6456,21,Screen Protector,Electronics,add_to_cart
+2025-11-06T19:24:21.680801,S1762437251,U6456,23,Sports Socks,Sports,add_to_cart
+2025-11-06T19:26:54.922913,S1762437397,U9590,18,Water Bottle,Sports,add_to_cart
+2025-11-06T19:27:03.579639,S1762437397,U9590,6,T-Shirt,Clothing,add_to_cart
+2025-11-06T19:27:05.773381,S1762437397,U9590,19,Sunglasses,Accessories,add_to_cart
+2025-11-06T19:27:32.689713,S1762437447,U1257,25,Face Mask,Beauty,add_to_cart
+2025-11-06T19:27:35.003885,S1762437447,U1257,4,Skincare Kit,Beauty,add_to_cart
+2025-11-06T19:27:48.606838,S1762437447,U1257,10,Laptop,Electronics,add_to_cart
+2025-11-06T19:27:53.119221,S1762437447,U1257,30,Laptop Sleeve,Accessories,add_to_cart
+2025-11-06T19:27:55.671796,S1762437447,U1257,22,Wireless Mouse,Electronics,add_to_cart
+2025-11-06T19:27:58.272757,S1762437447,U1257,21,Screen Protector,Electronics,add_to_cart
+2025-11-06T19:41:17.247294,S1762438272,U9846,10,Laptop,Electronics,add_to_cart
+2025-11-06T19:41:18.399048,S1762438272,U9846,11,Wireless Earbuds,Electronics,add_to_cart
+2025-11-06T21:32:33.391831,S1762444949,U8144,1,Smartphone,Electronics,add_to_cart
+2025-11-06T21:32:41.957104,S1762444949,U8144,21,Screen Protector,Electronics,add_to_cart
+2025-11-06T21:32:43.123337,S1762444949,U8144,27,Power Bank,Electronics,add_to_cart
+2025-11-06T21:34:40.437987,S1762444949,U8144,2,Car Accessories,Automotive,add_to_cart
+2025-11-06T21:34:44.739739,S1762445083,U3762,1,Smartphone,Electronics,add_to_cart
+2025-11-06T21:34:46.816803,S1762445083,U3762,8,Running Shoes,Sports,add_to_cart
+2025-11-06T21:34:50.716889,S1762445083,U3762,26,Coffee Beans,Groceries,add_to_cart
+2025-11-06T21:34:54.990980,S1762445083,U3762,18,Water Bottle,Sports,add_to_cart
+2025-11-06T21:39:34.008489,S1762445083,U3762,3,Cookware Set,Home & Kitchen,add_to_cart
+2025-11-06T21:39:37.170463,S1762445376,U4610,1,Smartphone,Electronics,add_to_cart
+2025-11-06T21:39:41.153148,S1762445376,U4610,4,Skincare Kit,Beauty,add_to_cart
+2025-11-06T21:39:44.965172,S1762445376,U4610,7,Action Figure,Toys,add_to_cart
+2025-11-06T21:39:46.308832,S1762445376,U4610,9,Organic Snacks,Groceries,add_to_cart
+2025-11-06T21:39:50.919909,S1762445376,U4610,10,Laptop,Electronics,add_to_cart
+2025-11-06T23:54:04.789209,S1762453441,U7047,1,Smartphone,Electronics,add_to_cart
+2025-11-06T23:54:06.430096,S1762453441,U7047,8,Running Shoes,Sports,add_to_cart
+2025-11-06T23:54:08.137423,S1762453441,U7047,11,Wireless Earbuds,Electronics,add_to_cart
+2025-11-06T23:54:18.952464,S1762453441,U7047,26,Coffee Beans,Groceries,add_to_cart
+2025-11-07T00:21:12.023505,S1762455070,U7260,1,Smartphone,Electronics,add_to_cart
+2025-11-07T00:21:17.395925,S1762455070,U7260,5,Novel Collection,Books,add_to_cart
+2025-11-07T00:21:26.085112,S1762455070,U7260,8,Running Shoes,Sports,add_to_cart
+2025-11-07T00:21:30.860412,S1762455070,U7260,2,Car Accessories,Automotive,add_to_cart
+2025-11-07T00:21:34.201220,S1762455070,U7260,8,Running Shoes,Sports,add_to_cart

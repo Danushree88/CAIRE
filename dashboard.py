@@ -13,7 +13,6 @@ from src.preprocessing.preprocess import CartAbandonmentPreprocessor
 from src.preprocessing.feature_engineering import FeatureEngineer
 from modeling_evaluation import ModelingEvaluationTab
 
-
 class BaseTab:
     def __init__(self, name):
         self.name = name
@@ -26,7 +25,6 @@ class BaseTab:
     @staticmethod
     def ensure_data_directory():
         os.makedirs("data", exist_ok=True)
-
 
 class EDATab(BaseTab):
     def __init__(self):

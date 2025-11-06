@@ -6,9 +6,6 @@ import os
 import math
 import time
 import json
-import joblib
-import sys
-import os
 
 # Page config
 st.set_page_config(
@@ -18,22 +15,108 @@ st.set_page_config(
 )
 
 # ============================================================================
+# PREPROCESSOR CLASS
+# ============================================================================
+
+class CartAbandonmentPreprocessor:
+    def __init__(self, encoders_path, scaler_path):
+        self.encoders_path = encoders_path
+        self.scaler_path = scaler_path
+        self.label_encoders = {}
+        self.scaler_info = {}
+
+    def load_preprocessing_artifacts(self):
+        """Load the preprocessing artifacts (encoders and scalers)"""
+        try:
+            with open(self.encoders_path, 'r') as f:
+                self.label_encoders = json.load(f)
+            with open(self.scaler_path, 'r') as f:
+                self.scaler_info = json.load(f)
+            return True
+        except FileNotFoundError:
+            st.error(f"❌ Preprocessing files not found at {self.encoders_path} and {self.scaler_path}")
+            st.info("💡 Please run the preprocessing script first to generate label_encoders.json and scaler_info.json")
+            return False
+
+    def preprocess_features(self, features_dict):
+        """Apply the exact same preprocessing steps as in the training data"""
+        if not self.label_encoders or not self.scaler_info:
+            if not self.load_preprocessing_artifacts():
+                return features_dict
+
+        # Create a copy to avoid modifying original
+        processed_features = features_dict.copy()
+        
+        # Apply the exact same encoding as in preprocessing
+        categorical_cols = ["day_of_week", "time_of_day", "device_type", "browser", 
+                           "referral_source", "location", "most_viewed_category"]
+        
+        for col in categorical_cols:
+            if col in processed_features and col in self.label_encoders:
+                original_val = processed_features[col]
+                mapping = self.label_encoders[col]
+                
+                # Handle both string and numeric inputs
+                if isinstance(original_val, str):
+                    # String input - map using the encoder
+                    processed_features[col] = mapping.get(original_val, 0)
+                else:
+                    # Numeric input - ensure it's within valid range
+                    valid_values = list(mapping.values())
+                    if original_val not in valid_values:
+                        processed_features[col] = 0  # Default to first category
+        
+        # Apply the exact same scaling as in preprocessing
+        to_standardize = ["session_duration", "num_pages_viewed", "scroll_depth"]
+        
+        for col in to_standardize:
+            if col in processed_features and col in self.scaler_info:
+                scaler = self.scaler_info[col]
+                mean_val = scaler["mean"]
+                std_val = scaler["std"]
+                processed_features[col] = (processed_features[col] - mean_val) / std_val if std_val != 0 else 0
+
+        # Apply the exact same cart_value transformation (log + standardize)
+        if "cart_value" in processed_features and "cart_value" in self.scaler_info:
+            cart_val = processed_features["cart_value"]
+            # Apply log transform (same as np.log1p in preprocessing)
+            cart_val_log = np.log1p(cart_val)
+            # Apply standardization with saved parameters
+            scaler = self.scaler_info["cart_value"]
+            mean_val = scaler["mean"]
+            std_val = scaler["std"]
+            processed_features["cart_value"] = (cart_val_log - mean_val) / std_val if std_val != 0 else 0
+
+        # Apply the exact same shipping_fee transformation (log transform only)
+        if "shipping_fee" in processed_features:
+            processed_features["shipping_fee"] = np.log1p(processed_features["shipping_fee"])
+
+        return processed_features
+
+# ============================================================================
 # LOAD LABEL ENCODERS FROM JSON FILE
 # ============================================================================
 
-try:
-    with open('data/label_encoders.json', 'r') as f:
-        label_encoders = json.load(f)
-    
-    DAY_OF_WEEK_MAP = label_encoders.get('day_of_week', {})
-    TIME_OF_DAY_MAP = label_encoders.get('time_of_day', {})
-    DEVICE_TYPE_MAP = label_encoders.get('device_type', {})
-    BROWSER_MAP = label_encoders.get('browser', {})
-    REFERRAL_SOURCE_MAP = label_encoders.get('referral_source', {})
-    LOCATION_MAP = label_encoders.get('location', {})
-    CATEGORY_MAP = label_encoders.get('most_viewed_category', {})
-    
-except FileNotFoundError:
+# Initialize preprocessor
+preprocessor = CartAbandonmentPreprocessor(
+    encoders_path='data/label_encoders.json',
+    scaler_path='data/scaler_info.json'
+)
+
+# Load preprocessing artifacts
+preprocessing_loaded = preprocessor.load_preprocessing_artifacts()
+
+if preprocessing_loaded:
+    # Use the loaded encoders for the app
+    DAY_OF_WEEK_MAP = preprocessor.label_encoders.get('day_of_week', {})
+    TIME_OF_DAY_MAP = preprocessor.label_encoders.get('time_of_day', {})
+    DEVICE_TYPE_MAP = preprocessor.label_encoders.get('device_type', {})
+    BROWSER_MAP = preprocessor.label_encoders.get('browser', {})
+    REFERRAL_SOURCE_MAP = preprocessor.label_encoders.get('referral_source', {})
+    LOCATION_MAP = preprocessor.label_encoders.get('location', {})
+    CATEGORY_MAP = preprocessor.label_encoders.get('most_viewed_category', {})
+else:
+    # Fallback mappings
     DAY_OF_WEEK_MAP = {"Saturday": 0, "Thursday": 1, "Monday": 2, "Sunday": 3, "Wednesday": 4, "Friday": 5, "Tuesday": 6}
     TIME_OF_DAY_MAP = {"Evening": 0, "Afternoon": 1, "Morning": 2, "Night": 3}
     DEVICE_TYPE_MAP = {"Mobile": 0, "Desktop": 1, "Tablet": 2}
@@ -487,7 +570,7 @@ st.session_state.segmenter = DirectRuleBasedSegmenter()
 recovery_manager = RecoveryStrategyManager()
 
 # ============================================================================
-# HELPER FUNCTIONS
+# HELPER FUNCTIONS (UPDATED WITH PREPROCESSING)
 # ============================================================================
 
 def get_time_of_day(hour):
@@ -628,9 +711,8 @@ def calculate_realistic_engagement_score(session_data):
     
     return final_score
 
-
-def calculate_features(abandoned):
-    """Calculate all features for model input"""
+def calculate_raw_features(abandoned):
+    """Calculate raw features before preprocessing - INCLUDES ALL FEATURE ENGINEERING"""
     current_time = datetime.now()
     session_duration = (current_time - st.session_state.session_data['start_time']).total_seconds()
     
@@ -650,13 +732,13 @@ def calculate_features(abandoned):
     add_events = len([e for e in st.session_state.session_data['events'] if e['event_type'] == 'add_to_cart'])
     view_events = len([e for e in st.session_state.session_data['events'] if e['event_type'] == 'view_product'])
     
-    # Basic metrics - REALISTIC VALUES
+    # Basic metrics - RAW VALUES (before preprocessing)
     num_pages_viewed = len(st.session_state.session_data['pages_viewed'])
     num_items_carted = len(st.session_state.session_data['items'])
     scroll_depth = st.session_state.session_data['scroll_depth']
-    cart_value_scaled = st.session_state.session_data['cart_value']
-    shipping_fee = 0 if cart_value_scaled >= 200 else 99
-    free_shipping_eligible = 1 if cart_value_scaled >= 200 else 0
+    cart_value_raw = st.session_state.session_data['cart_value']  # Raw cart value
+    shipping_fee = 0 if cart_value_raw >= 200 else 99
+    free_shipping_eligible = 1 if cart_value_raw >= 200 else 0
 
     # Most viewed category
     if st.session_state.session_data['categories_viewed']:
@@ -668,7 +750,7 @@ def calculate_features(abandoned):
     else:
         most_viewed_category = "Electronics"
     
-    # Engineered features
+    # ENGINEERED FEATURES (all your existing feature engineering)
     total_actions = len(st.session_state.session_data['events'])
     engagement_intensity = total_actions / max(session_duration / 60, 1)
     scroll_engagement = min(1.0, scroll_depth / 100.0)
@@ -695,27 +777,28 @@ def calculate_features(abandoned):
     pca1 = np.random.normal(0, 1)
     pca2 = np.random.normal(0, 1)
     
-    features = {
+    # RAW features with ALL feature engineering (before preprocessing)
+    raw_features = {
         'session_id': st.session_state.session_data['session_id'],
         'user_id': st.session_state.session_data['user_id'],
         'return_user': st.session_state.session_data['return_user'],
-        'day_of_week': DAY_OF_WEEK_MAP.get(day_name, 0),
-        'time_of_day': TIME_OF_DAY_MAP.get(time_of_day, 0),
-        'session_duration': max(60, min(5000, session_duration)),
-        'num_pages_viewed': num_pages_viewed,
+        'day_of_week': day_name,  # Raw string
+        'time_of_day': time_of_day,  # Raw string
+        'session_duration': max(60, min(5000, session_duration)),  # Raw value
+        'num_pages_viewed': num_pages_viewed,  # Raw value
         'num_items_carted': num_items_carted,
         'has_viewed_shipping_info': int(st.session_state.session_data['shipping_viewed']),
-        'scroll_depth': scroll_depth,
-        'cart_value': cart_value_scaled,
+        'scroll_depth': scroll_depth,  # Raw value
+        'cart_value': cart_value_raw,  # Raw cart value
         'discount_applied': st.session_state.session_data['discount_applied'],
-        'shipping_fee': shipping_fee,
+        'shipping_fee': shipping_fee,  # Raw shipping fee
         'free_shipping_eligible': free_shipping_eligible,
-        'device_type': DEVICE_TYPE_MAP.get(st.session_state.session_data['device_type'], 0),
-        'browser': BROWSER_MAP.get(st.session_state.session_data['browser'], 0),
-        'referral_source': REFERRAL_SOURCE_MAP.get(st.session_state.session_data['referral_source'], 0),
-        'location': LOCATION_MAP.get(st.session_state.session_data['location'], 0),
+        'device_type': st.session_state.session_data['device_type'],  # Raw string
+        'browser': st.session_state.session_data['browser'],  # Raw string
+        'referral_source': st.session_state.session_data['referral_source'],  # Raw string
+        'location': st.session_state.session_data['location'],  # Raw string
         'if_payment_page_reached': 1 if st.session_state.session_data['payment_reached'] else 0,
-        'most_viewed_category': CATEGORY_MAP.get(most_viewed_category, 0),
+        'most_viewed_category': most_viewed_category,  # Raw string
         'engagement_intensity': engagement_intensity,
         'scroll_engagement': scroll_engagement,
         'is_weekend': is_weekend,
@@ -735,10 +818,24 @@ def calculate_features(abandoned):
         'abandoned': abandoned
     }
     
-    return features
+    return raw_features
+
+def calculate_features(abandoned):
+    """Calculate features with preprocessing applied"""
+    # Get raw features first (includes ALL feature engineering)
+    raw_features = calculate_raw_features(abandoned)
+    
+    # Apply preprocessing transformations
+    processed_features = preprocessor.preprocess_features(raw_features)
+    
+    return processed_features
 
 def save_session_data(abandoned, segment=None):
+    """Save preprocessed features for prediction"""
+    # Get preprocessed features (feature engineering + preprocessing)
     features = calculate_features(abandoned)
+    
+    # Create ordered features dictionary
     ordered_features = {}
     ordered_features['session_id'] = features['session_id']
     ordered_features['user_id'] = features['user_id']
@@ -750,14 +847,88 @@ def save_session_data(abandoned, segment=None):
     ordered_features['abandoned'] = abandoned
     ordered_features['customer_segment'] = segment if segment else "Unknown"
     
+    # Save to file
     os.makedirs('test_data', exist_ok=True)  
     df = pd.DataFrame([ordered_features])
     csv_file = 'test_data/test_data_for_prediction.csv'   
+    
     if os.path.exists(csv_file):
         existing_df = pd.read_csv(csv_file)
         df = pd.concat([existing_df, df], ignore_index=True)   
+    
     df.to_csv(csv_file, index=False)
     st.session_state.all_sessions.append(ordered_features)  
+    return csv_file
+
+def save_raw_session_data(abandoned_status=None):
+    """Save raw session data (without preprocessing) for analytics"""
+    raw_features = calculate_raw_features(abandoned=0)  # Get raw features
+    
+    # Convert to display format
+    raw_data = {
+        'session_id': raw_features['session_id'],
+        'user_id': raw_features['user_id'],
+        'timestamp': datetime.now().isoformat(),
+        'return_user': 'Yes' if raw_features['return_user'] else 'No',
+        'day_of_week': raw_features['day_of_week'],  # Raw string
+        'time_of_day': raw_features['time_of_day'],  # Raw string
+        'session_duration_seconds': raw_features['session_duration'],
+        'num_pages_viewed': raw_features['num_pages_viewed'],
+        'num_items_carted': raw_features['num_items_carted'],
+        'has_viewed_shipping_info': 'Yes' if raw_features['has_viewed_shipping_info'] else 'No',
+        'scroll_depth_percent': raw_features['scroll_depth'],
+        'cart_value': raw_features['cart_value'],  # Raw cart value
+        'discount_applied': 'Yes' if raw_features['discount_applied'] else 'No',
+        'discount_code': st.session_state.session_data.get('discount_code', 'None'),
+        'discount_percentage': st.session_state.session_data.get('discount_percentage', 0),
+        'shipping_fee': raw_features['shipping_fee'],
+        'free_shipping_eligible': 'Yes' if raw_features['free_shipping_eligible'] else 'No',
+        'device_type': raw_features['device_type'],  # Raw string
+        'browser': raw_features['browser'],  # Raw string
+        'referral_source': raw_features['referral_source'],  # Raw string
+        'location': raw_features['location'],  # Raw string
+        'payment_page_reached': 'Yes' if raw_features['if_payment_page_reached'] else 'No',
+        'most_viewed_category': raw_features['most_viewed_category'],  # Raw string
+        'total_products_viewed': st.session_state.session_data['view_product_count'],
+        'total_events': len(st.session_state.session_data['events']),
+        'cart_items_count': len(st.session_state.session_data['items']),
+        'cart_items_names': ', '.join([item['name'] for item in st.session_state.session_data['items']]),
+        'viewed_categories': ', '.join(list(st.session_state.session_data['categories_viewed'])),
+        'current_page': st.session_state.session_data['current_page'],
+        'engagement_score': raw_features['engagement_score'],
+        'abandoned': 'Yes' if abandoned_status == 1 else 'No'
+    }
+    
+    # Define the order of columns for the raw data CSV
+    raw_columns = [
+        'session_id', 'user_id', 'timestamp', 'return_user', 'day_of_week', 'time_of_day',
+        'session_duration_seconds', 'num_pages_viewed', 'num_items_carted', 
+        'has_viewed_shipping_info', 'scroll_depth_percent', 'cart_value', 
+        'discount_applied', 'discount_code', 'discount_percentage', 'shipping_fee',
+        'free_shipping_eligible', 'device_type', 'browser', 'referral_source', 
+        'location', 'payment_page_reached', 'most_viewed_category', 
+        'total_products_viewed', 'total_events', 'cart_items_count', 
+        'cart_items_names', 'viewed_categories', 'current_page', 'engagement_score',
+        'abandoned'
+    ]
+    
+    # Create ordered dictionary
+    ordered_data = {}
+    for col in raw_columns:
+        if col in raw_data:
+            ordered_data[col] = raw_data[col]
+    
+    # Save to CSV
+    os.makedirs('analytics_data', exist_ok=True)
+    csv_file = 'analytics_data/raw_user_sessions.csv'
+    
+    df = pd.DataFrame([ordered_data])
+    
+    if os.path.exists(csv_file):
+        df.to_csv(csv_file, mode='a', header=False, index=False)
+    else:
+        df.to_csv(csv_file, index=False)
+    
     return csv_file
 
 def start_new_session():
@@ -809,7 +980,7 @@ def trigger_segmentation_and_recovery(session_data, abandoned_status):
     Always runs - for both abandoned and purchased sessions
     """
     try:
-        # Calculate features
+        # Calculate features WITH PREPROCESSING
         features = calculate_features(abandoned=abandoned_status)
         
         # Predict segment using direct rule-based logic
@@ -844,7 +1015,9 @@ def handle_session_end(action_type):
             recovery_manager = RecoveryStrategyManager()
             executed_actions = recovery_manager.execute_segment_actions(segment, st.session_state.session_data)
             
-            csv_file = save_session_data(abandoned=1, segment=segment)
+            # Save BOTH types of data with abandoned status
+            featured_csv = save_session_data(abandoned=1, segment=segment)  # Preprocessed
+            raw_csv = save_raw_session_data(abandoned_status=1)  # Raw
             
             st.session_state.current_segment = segment
             st.session_state.current_recovery_strategy = strategy
@@ -852,6 +1025,7 @@ def handle_session_end(action_type):
             st.session_state.show_new_session_btn = True
             
             st.success("📊 Cart abandoned - recovery actions triggered!")
+            st.info(f"💾 Data saved: Preprocessed ({featured_csv}), Raw ({raw_csv})")
             
         elif action_type == "purchase":
             st.session_state.session_data['payment_reached'] = True
@@ -863,7 +1037,9 @@ def handle_session_end(action_type):
             recovery_manager = RecoveryStrategyManager()
             executed_actions = recovery_manager.execute_segment_actions(segment, st.session_state.session_data)
 
-            csv_file = save_session_data(abandoned=0, segment=segment)
+            # Save BOTH types of data with abandoned status
+            featured_csv = save_session_data(abandoned=0, segment=segment)  # Preprocessed
+            raw_csv = save_raw_session_data(abandoned_status=0)  # Raw
             
             st.session_state.current_segment = segment
             st.session_state.current_recovery_strategy = strategy
@@ -871,6 +1047,7 @@ def handle_session_end(action_type):
             st.session_state.show_new_session_btn = True
             
             st.success("🎉 Purchase complete - retention actions applied!")
+            st.info(f"💾 Data saved: Preprocessed ({featured_csv}), Raw ({raw_csv})")
     else:
         st.warning("❌ Add items to cart first!")
 
@@ -903,6 +1080,7 @@ def display_segmentation_ui(segment=None, strategy=None):
         <p style="margin: 4px 0; font-size: 0.85em;"><strong>Channel:</strong> {strategy['channel']}</p>
     </div>
     """, unsafe_allow_html=True)
+    
     if executed_actions:
         st.sidebar.write("**✅ Applied Actions:**")
         for action in executed_actions:
@@ -919,6 +1097,13 @@ def display_segmentation_ui(segment=None, strategy=None):
 def main():
     st.title("🛒 ShopEasy - Test Data Store")
     st.markdown("### Realistic shopping simulation with auto-saved features")
+    
+    # Show preprocessing status
+    if not preprocessing_loaded:
+        st.warning("⚠️ Preprocessing artifacts not loaded. Using fallback mappings.")
+        st.info("💡 Run the preprocessing script first to generate label_encoders.json and scaler_info.json")
+    else:
+        st.success("✅ Preprocessing artifacts loaded successfully!")
     
     # Sidebar session info
     with st.sidebar:
@@ -1036,7 +1221,6 @@ def main():
                         st.rerun()
     
         return
-        
 
     navigate_page('home')
     
@@ -1048,6 +1232,7 @@ def main():
         update_scroll_depth(scroll_val)
         category_filter = st.selectbox("Filter by Category", ["All"] + list(set([p['category'] for p in PRODUCTS])))
         filtered_products = PRODUCTS if category_filter == "All" else [p for p in PRODUCTS if p['category'] == category_filter] 
+        
         for i in range(0, len(filtered_products), 3):
             cols = st.columns(3)
             for j, product in enumerate(filtered_products[i:i+3]):
@@ -1198,9 +1383,15 @@ def main():
         with col4:
             st.metric("Payment Page", "✅" if features['if_payment_page_reached'] else "❌")
         
-        st.write("**Full Feature Set:**")
+        st.write("**Full Feature Set (PREPROCESSED):**")
         features_df = pd.DataFrame([features])
         st.dataframe(features_df, width='stretch')
+        
+        # Show preprocessing status
+        if preprocessing_loaded:
+            st.success("✅ Features are preprocessed using the same transformations as training data")
+        else:
+            st.warning("⚠️ Using fallback preprocessing - run preprocessing script for exact transformations")
         
         col1, col2 = st.columns(2)
         with col1:

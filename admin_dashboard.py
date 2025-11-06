@@ -227,12 +227,6 @@ class AdminDashboardTab(BaseTab):
                 
                 st.plotly_chart(fig, use_container_width=True)
                 
-                # Insight
-                if not engagement_abandonment.empty:
-                    max_segment = engagement_abandonment.idxmax()
-                    max_rate = engagement_abandonment.max()
-                    info_box(f"**Insight:** Highest abandonment ({max_rate:.1f}%) in **{max_segment}** engagement group")
-        
         with col2:
             # Cart value distribution
             st.subheader("💰 Cart Value Distribution")
@@ -351,36 +345,92 @@ class AdminDashboardTab(BaseTab):
                 st.plotly_chart(fig, use_container_width=True)
 
     def render_recent_data(self):
-        """Render recent session data"""
+        """Render recent session data from raw sessions CSV"""
         create_section("Recent Session Data", "📋")
         
-
-        data_source = self.df2 if self.df2 is not None else self.df
+        # Load the raw sessions data
+        raw_data_path = "analytics_data/raw_user_sessions.csv"
         
-        if data_source is None:
-            error_box("No dataset available to display")
+        if not os.path.exists(raw_data_path):
+            error_box("No raw session data available yet. Complete some shopping sessions first.")
+            
+            # Show sample of what data will look like
+            st.info("📝 **Sample of what will be recorded:**")
+            sample_data = {
+                'session_id': ['S12345', 'S12346'],
+                'user_id': ['U6789', 'U6790'],
+                'timestamp': ['2024-01-15T14:30:00', '2024-01-15T15:45:00'],
+                'return_user': ['No', 'Yes'],
+                'cart_value': [299.99, 89900.99],
+                'cart_items_count': [2, 1],
+                'cart_items_names': ['Smartphone, Phone Case', 'Laptop'],
+                'abandoned': ['Yes', 'No'],
+                'payment_page_reached': ['No', 'Yes'],
+                'engagement_score': [7.2, 8.5]
+            }
+            st.dataframe(pd.DataFrame(sample_data), use_container_width=True)
             return
         
-        # Define basic columns that should be available
-        basic_cols = [
-            'user_id', 'cart_value', 'num_items_carted', 
-            'session_duration', 'abandoned', 'if_payment_page_reached'
+        # Load raw data
+        raw_df = pd.read_csv(raw_data_path)
+        
+        if raw_df.empty:
+            warning_box("Raw session data file exists but is empty.")
+            return
+        
+        # Define human-readable columns for display
+        display_cols = [
+            'session_id', 'user_id', 'timestamp', 'return_user', 
+            'cart_value', 'cart_items_count', 'cart_items_names',
+            'abandoned', 'payment_page_reached', 'engagement_score'
         ]
         
         # Filter to only available columns
-        available_cols = [col for col in basic_cols if col in data_source.columns]
+        available_cols = [col for col in display_cols if col in raw_df.columns]
         
         if available_cols:
+            # Sort by timestamp (most recent first) and get last 15 sessions
+            if 'timestamp' in raw_df.columns:
+                raw_df['timestamp'] = pd.to_datetime(raw_df['timestamp'])
+                recent_data = raw_df.sort_values('timestamp', ascending=False).head(15)
+            else:
+                recent_data = raw_df.tail(15)
+            
+            # Format the display
+            formatted_data = recent_data[available_cols].copy()
+            
+            # Format numeric columns
+            if 'cart_value' in formatted_data.columns:
+                formatted_data['cart_value'] = formatted_data['cart_value'].apply(
+                    lambda x: f"₹{x:,.2f}" if pd.notnull(x) else "₹0.00"
+                )
+            
+            if 'engagement_score' in formatted_data.columns:
+                formatted_data['engagement_score'] = formatted_data['engagement_score'].apply(
+                    lambda x: f"{x:.1f}/10" if pd.notnull(x) else "N/A"
+                )
+            
             st.dataframe(
-                data_source[available_cols].tail(15), 
+                formatted_data, 
                 use_container_width=True,
-                height=300
+                height=400
             )
+            
+            # Show some statistics
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Total Sessions", len(raw_df))
+            with col2:
+                abandoned_count = len(raw_df[raw_df['abandoned'] == 'Yes']) if 'abandoned' in raw_df.columns else 0
+                st.metric("Abandoned Sessions", abandoned_count)
+            with col3:
+                avg_engagement = raw_df['engagement_score'].mean() if 'engagement_score' in raw_df.columns else 0
+                st.metric("Avg Engagement", f"{avg_engagement:.1f}/10")
+                
         else:
-            warning_box("Required columns not found in dataset")
-            # Show what columns are available for debugging
-            st.write("Available columns:", list(data_source.columns))
-
+            warning_box("Required columns not found in raw session data")
+            st.write("Available columns in raw data:", list(raw_df.columns))
+            
     def run(self):
         """Main method to run the admin dashboard"""
         self.load_datasets()
