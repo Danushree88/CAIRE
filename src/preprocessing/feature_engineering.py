@@ -122,6 +122,19 @@ class FeatureEngineer:
         print("PCA applied with safe features:")
         print(loadings)
 
+        # SAVE SCALER INFO FOR PCA FEATURES
+        pca_scaler_info = {}
+        for i, feature in enumerate(self.pca_features):
+            pca_scaler_info[feature] = {
+                "mean": float(mean[i]),
+                "std": float(std[i])
+            }
+        
+        # Save to file
+        pca_scaler_path = os.path.join(os.path.dirname(self.featured_path), "pca_scaler_info.json")
+        with open(pca_scaler_path, "w") as f:
+            json.dump(pca_scaler_info, f)
+
     def correlation_report(self):
         if "abandoned" in self.df.columns:
             corr = self.df.corr(numeric_only=True)["abandoned"].sort_values(ascending=False)

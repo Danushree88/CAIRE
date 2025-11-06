@@ -14,6 +14,67 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 RNG = np.random.RandomState(42)
 random.seed(42)
 
+# ============================================================================
+# BEST PARAMETERS STORAGE - For future use
+# ============================================================================
+BEST_MODEL_PARAMS = {
+    "model_type": None,  # Will be set after grid search: "GradientBoostingClassifierManual" or "RandomForestManual"
+    "parameters": None,  # Will contain the actual best parameters dict
+    "performance": None, # Will contain test metrics
+    "feature_names": None, # Will be set from data
+    "grid_search_completed": False
+}
+
+# Pre-defined parameter grids for quick reference
+PARAM_GRIDS = {
+    "RandomForest": {
+        "n_estimators": [10, 20],
+        "max_depth": [4, 6],
+        "min_samples_split": [2, 5],
+        "max_features": ['sqrt']
+    },
+    "GradientBoosting": {
+        "n_estimators": [20, 50],
+        "learning_rate": [0.05, 0.1],
+        "max_depth": [2, 3],
+        "min_samples_split": [2]
+    }
+}
+
+def get_best_params():
+    """Returns the best parameters found from grid search"""
+    return BEST_MODEL_PARAMS
+
+def create_model_with_best_params():
+    """Creates a model instance with the stored best parameters"""
+    if not BEST_MODEL_PARAMS["grid_search_completed"]:
+        raise ValueError("Grid search not completed. Run main() first or set BEST_MODEL_PARAMS manually.")
+    
+    if BEST_MODEL_PARAMS["model_type"] == "GradientBoostingClassifierManual":
+        return GradientBoostingClassifierManual(**BEST_MODEL_PARAMS["parameters"])
+    elif BEST_MODEL_PARAMS["model_type"] == "RandomForestManual":
+        return RandomForestManual(**BEST_MODEL_PARAMS["parameters"])
+    else:
+        raise ValueError("Unknown model type in BEST_MODEL_PARAMS")
+
+def print_best_params():
+    """Prints the current best parameters"""
+    if not BEST_MODEL_PARAMS["grid_search_completed"]:
+        print("Grid search not completed yet.")
+        return
+    print("=== BEST MODEL PARAMETERS ===")
+    print(f"Model Type: {BEST_MODEL_PARAMS['model_type']}")
+    print("Parameters:")
+    for key, value in BEST_MODEL_PARAMS["parameters"].items():
+        print(f"  {key}: {value}")
+    if BEST_MODEL_PARAMS["performance"]:
+        print("Test Performance:")
+        for metric, score in BEST_MODEL_PARAMS["performance"].items():
+            print(f"  {metric}: {score:.4f}")
+
+# ============================================================================
+# ORIGINAL CODE (all your existing functions and classes)
+# ============================================================================
 def sigmoid(z):
     return 1.0 / (1.0 + np.exp(-z))
 
@@ -495,23 +556,46 @@ def grid_search_manual(ModelClass, grid_params, X, y, n_splits=3, metric='roc_au
     return best["params"], best["score"], all_results
 
 def load_featured_data(path=None):
+    """
+    Load featured data - direct path since model.py is outside data folder
+    """
     if path is None:
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(os.path.dirname(current_dir)) 
-        path = os.path.join(project_root, "data", "cart_abandonment_featured.csv")
+        # model.py is outside data folder, so data folder is in the same directory as model.py
+        path = os.path.join(current_dir, "data", "cart_abandonment_featured.csv")
     
-    data_dir = os.path.dirname(path)
-    if data_dir and not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-        print(f"Created directory: {data_dir}")
+    print(f"Loading data from: {path}")
     
-    df = pd.read_csv(path)
-    X = df.drop(columns=[c for c in ["abandoned", "session_id", "user_id"] if c in df.columns], errors='ignore')
-    y = df["abandoned"].values
-    return X.values.astype(float), y, X.columns.tolist()
+    # Check if file exists
+    if not os.path.exists(path):
+        # List available files for debugging
+        data_dir = os.path.dirname(path)
+        if os.path.exists(data_dir):
+            available_files = os.listdir(data_dir)
+            print(f"Available files in data directory: {available_files}")
+        raise FileNotFoundError(f"Data file not found at {path}")
+    
+    try:
+        df = pd.read_csv(path)
+        # Check if target column exists
+        if "abandoned" not in df.columns:
+            raise ValueError(f"Target column 'abandoned' not found in dataset. Available columns: {df.columns.tolist()}")
+        
+        # Drop non-feature columns
+        columns_to_drop = [c for c in ["abandoned", "session_id", "user_id"] if c in df.columns]
+        X = df.drop(columns=columns_to_drop, errors='ignore')
+        y = df["abandoned"].values
+        return X.values.astype(float), y, X.columns.tolist()
+        
+    except Exception as e:
+        print(f"❌ Error loading data: {e}")
+        raise
 
 def main():
     X_all, y_all, feature_names = load_featured_data()
+    
+    # Update feature names in BEST_MODEL_PARAMS
+    BEST_MODEL_PARAMS["feature_names"] = feature_names
 
     print("N samples:", X_all.shape[0], "N features:", X_all.shape[1])
     train_idx, test_idx = stratified_train_test_split(X_all, y_all, test_size=0.2, random_state=42)
@@ -556,10 +640,16 @@ def main():
         print("Selecting Gradient Boosting as final")
         final_model = GradientBoostingClassifierManual(**best_gb_params)
         final_model.fit_with_baseline(X_train, y_train)
+        # STORE THE BEST PARAMETERS
+        BEST_MODEL_PARAMS["model_type"] = "GradientBoostingClassifierManual"
+        BEST_MODEL_PARAMS["parameters"] = best_gb_params
     else:
         print("Selecting Random Forest as final")
         final_model = RandomForestManual(**best_rf_params)
         final_model.fit(X_train, y_train)
+        # STORE THE BEST PARAMETERS
+        BEST_MODEL_PARAMS["model_type"] = "RandomForestManual"
+        BEST_MODEL_PARAMS["parameters"] = best_rf_params
 
     try:
         y_score_test = final_model.predict_proba(X_test)
@@ -574,15 +664,102 @@ def main():
         "recall": recall_score_manual(y_test, y_pred_test),
         "accuracy": accuracy_score(y_test, y_pred_test)
     }
+    
+    # STORE PERFORMANCE METRICS
+    BEST_MODEL_PARAMS["performance"] = test_metrics
+    BEST_MODEL_PARAMS["grid_search_completed"] = True
+    
     print("\nTest set metrics:", test_metrics)
+    
+    # Print the best parameters for easy reference
+    print("\n" + "="*50)
+    print("BEST PARAMETERS STORED FOR FUTURE USE:")
+    print_best_params()
+    print("="*50)
 
     model_path = "final_manual_model.pkl"
     with open(model_path, "wb") as f:
         pickle.dump({
             "model": final_model,
-            "feature_names": feature_names
+            "feature_names": feature_names,
+            "best_params": BEST_MODEL_PARAMS  # Also save best params in the pickle
         }, f)
     print(f"Saved final model to {model_path}")
 
+# ============================================================================
+# QUICK TRAINING FUNCTION USING STORED PARAMETERS
+# ============================================================================
+def quick_train_with_best_params(data_path=None, save_model=True):
+    """
+    Quick training function that uses the stored best parameters
+    Call this for future training instead of running the full grid search
+    """
+    if not BEST_MODEL_PARAMS["grid_search_completed"]:
+        print("Best parameters not found. Running full grid search first...")
+        main()
+        return
+    
+    print("=== QUICK TRAINING WITH STORED BEST PARAMETERS ===")
+    print_best_params()
+    
+    # Load data
+    X_all, y_all, feature_names = load_featured_data(data_path)
+    
+    # Split data
+    train_idx, test_idx = stratified_train_test_split(X_all, y_all, test_size=0.2, random_state=42)
+    X_train, y_train = X_all[train_idx], y_all[train_idx]
+    X_test, y_test = X_all[test_idx], y_all[test_idx]
+    
+    # Create and train model with best parameters
+    final_model = create_model_with_best_params()
+    
+    # Train with appropriate method
+    if BEST_MODEL_PARAMS["model_type"] == "GradientBoostingClassifierManual":
+        final_model.fit_with_baseline(X_train, y_train)
+    else:
+        final_model.fit(X_train, y_train)
+    
+    # Evaluate
+    try:
+        y_score_test = final_model.predict_proba(X_test)
+    except Exception:
+        y_score_test = final_model.predict(X_test).astype(float)
+    
+    y_pred_test = (y_score_test >= 0.5).astype(int)
+    
+    test_metrics = {
+        "roc_auc": roc_auc_score_manual(y_test, y_score_test),
+        "f1": f1_score_manual(y_test, y_pred_test),
+        "precision": precision_score_manual(y_test, y_pred_test),
+        "recall": recall_score_manual(y_test, y_pred_test),
+        "accuracy": accuracy_score(y_test, y_pred_test)
+    }
+    
+    print("\nTest performance with stored parameters:")
+    for metric, value in test_metrics.items():
+        print(f"{metric}: {value:.4f}")
+    
+    if save_model:
+        model_path = "quick_trained_model.pkl"
+        with open(model_path, "wb") as f:
+            pickle.dump({
+                "model": final_model,
+                "feature_names": feature_names,
+                "best_params": BEST_MODEL_PARAMS
+            }, f)
+        print(f"Saved quick-trained model to {model_path}")
+    
+    return final_model, test_metrics
+
 if __name__ == "__main__":
     main()
+    
+    # After running main(), you can use this to see the stored parameters:
+    print("\n" + "="*60)
+    print("ACCESSING STORED PARAMETERS:")
+    stored_params = get_best_params()
+    print(f"Best model type: {stored_params['model_type']}")
+    print(f"Best parameters: {stored_params['parameters']}")
+    
+    # Example of quick training for future use:
+    # quick_train_with_best_params()

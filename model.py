@@ -584,7 +584,7 @@ def load_featured_data(path=None):
         # Drop non-feature columns
         columns_to_drop = [c for c in ["abandoned", "session_id", "user_id"] if c in df.columns]
         X = df.drop(columns=columns_to_drop, errors='ignore')
-        y = df["abandoned"].valuesx
+        y = df["abandoned"].values
         return X.values.astype(float), y, X.columns.tolist()
         
     except Exception as e:
