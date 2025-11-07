@@ -181,58 +181,6 @@ class AnalyticsHelper:
                     )
                     st.plotly_chart(fig_box, use_container_width=True)
     
-    def create_segmentation_analysis(self):
-        if self.df is None:
-            return
-        
-        st.subheader("Customer Segmentation Analysis")
-        
-        if all(col in self.df.columns for col in ['session_duration', 'cart_value']):
-            # Define segments
-            conditions = [
-                (self.df['session_duration'] < 300) & (self.df['cart_value'] < 100),
-                (self.df['session_duration'] >= 300) & (self.df['cart_value'] < 100),
-                (self.df['session_duration'] < 300) & (self.df['cart_value'] >= 100),
-                (self.df['session_duration'] >= 300) & (self.df['cart_value'] >= 100)
-            ]
-            segments = ['Quick Browser', 'Engaged Browser', 'Quick Buyer', 'Engaged Buyer']
-            
-            self.df['segment'] = np.select(conditions, segments, default='Other')
-            
-            # Analyze segments
-            segment_analysis = self.df.groupby('segment').agg({
-                'abandoned': 'mean',
-                'session_duration': 'mean',
-                'cart_value': 'mean',
-                'user_id': 'count'
-            }).round(2)
-            
-            segment_analysis = segment_analysis.rename(columns={
-                'abandoned': 'abandonment_rate',
-                'user_id': 'user_count'
-            })
-            
-            st.dataframe(segment_analysis, use_container_width=True)
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                fig_segment_size = px.pie(
-                    values=segment_analysis['user_count'],
-                    names=segment_analysis.index,
-                    title="Segment Distribution"
-                )
-                st.plotly_chart(fig_segment_size, use_container_width=True)
-            
-            with col2:
-                fig_abandonment = px.bar(
-                    x=segment_analysis.index,
-                    y=segment_analysis['abandonment_rate'] * 100,
-                    title="Abandonment Rate by Segment",
-                    labels={'x': 'Segment', 'y': 'Abandonment Rate (%)'}
-                )
-                st.plotly_chart(fig_abandonment, use_container_width=True)
-    
     def create_business_impact(self):
         if self.df is None:
             return
@@ -271,9 +219,9 @@ class AnalyticsHelper:
         st.subheader("💰 Key Revenue Opportunities")
         
         insights = [
-            f"**Immediate Opportunity**: Recovering just 5% of abandoned carts could generate **${impact_data[0]['Potential Revenue']}** in additional revenue",
-            f"**Realistic Goal**: A 15% recovery rate could bring in **${impact_data[2]['Potential Revenue']}**",
-            f"**Ambitious Target**: With 25% recovery, potential revenue reaches **${impact_data[4]['Potential Revenue']}**"
+            f"**Immediate Opportunity**: Recovering just 5% of abandoned carts could generate **{impact_data[0]['Potential Revenue']}** in additional revenue",
+            f"**Realistic Goal**: A 15% recovery rate could bring in **{impact_data[2]['Potential Revenue']}**",
+            f"**Ambitious Target**: With 25% recovery, potential revenue reaches **{impact_data[4]['Potential Revenue']}**"
         ]
         
         for insight in insights:
@@ -320,23 +268,19 @@ class AnalyticsHelper:
         st.markdown("---")
         self.create_abandonment_overview()
         
-        tab1, tab2, tab3, tab4= st.tabs([
-             "🔍 Features", "👥 Segments", "💰 Business Impact", "🎯 Insights"
+        tab1, tab2, tab3= st.tabs([
+             "🔍 Features", "💰 Business Impact", "🎯 Insights"
         ])
         
         with tab1:
             self.create_feature_analysis()
         
         with tab2:
-            self.create_segmentation_analysis()
-        
-        with tab3:
             self.create_business_impact()
         
-        with tab4:
+        with tab3:
             self.create_predictive_insights()
             
-
             st.subheader("Dataset Summary")
             col1, col2 = st.columns(2)
             

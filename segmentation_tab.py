@@ -153,7 +153,7 @@ class SegmentAnalysisTab:
         
     def render_segment_overview(self):
         """Render comprehensive segment overview"""
-        create_section("🎯 Customer Segments Overview")
+        create_section("🎯 Customer Segments Overview","")
         
         if self.segmenter is None or self.df is None:
             warning_box("Segmentation data not available. Please check data files.")
@@ -201,21 +201,30 @@ class SegmentAnalysisTab:
         """Render segment performance metrics"""
         create_section("📈 Segment Performance Metrics", "Key Behavioral Indicators")
         
-        if self.segmenter is None:
+        if self.segmenter is None or self.df is None:
             return
         
-        # Create performance comparison chart
+        # Calculate metrics for each segment
         segments_data = []
         for segment_id, profile in self.segmenter.segment_profiles.items():
+            segment_mask = self.df['segment'] == segment_id
+            segment_df = self.df[segment_mask]
+            
+            # Calculate metrics safely with fallbacks
+            abandonment_rate = (segment_df['abandoned'].mean() * 100) if len(segment_df) > 0 else 0
+            avg_cart_value = segment_df['cart_value'].mean() if len(segment_df) > 0 else 0
+            avg_engagement = segment_df['engagement_score'].mean() if len(segment_df) > 0 else 0
+            return_user_rate = (segment_df['return_user'].mean() * 100) if len(segment_df) > 0 else 0
+            
             segments_data.append({
-                'Segment': profile['segment_name'],
-                'Abandonment Rate': profile['abandonment_rate'],
-                'Avg Cart Value': profile['avg_cart_value'],
-                'Avg Engagement': profile['avg_engagement'],
-                'Return User Rate': profile['return_user_rate'],
-                'Recovery Priority': profile['recovery_priority'],
-                'Business Value': profile['business_value'],
-                'Size': profile['size']
+                'Segment': profile.get('segment_name', f'Segment {segment_id}'),
+                'Abandonment Rate': abandonment_rate,
+                'Avg Cart Value': avg_cart_value,
+                'Avg Engagement': avg_engagement,
+                'Return User Rate': return_user_rate,
+                'Recovery Priority': profile.get('recovery_priority', 'Medium'),
+                'Business Value': profile.get('business_value', 'Medium'),
+                'Size': len(segment_df)
             })
         
         segments_df = pd.DataFrame(segments_data)
@@ -249,7 +258,7 @@ class SegmentAnalysisTab:
                 color_continuous_scale='Blues',
                 text='Avg Cart Value'
             )
-            fig.update_traces(texttemplate='%{text:.3f}', textposition='outside')
+            fig.update_traces(texttemplate='₹%{text:.2f}', textposition='outside')
             fig.update_layout(showlegend=False)
             st.plotly_chart(fig, use_container_width=True)
         
@@ -258,7 +267,7 @@ class SegmentAnalysisTab:
         display_df = segments_df[['Segment', 'Size', 'Abandonment Rate', 'Avg Cart Value', 
                                 'Avg Engagement', 'Return User Rate', 'Recovery Priority', 'Business Value']].copy()
         display_df['Abandonment Rate'] = display_df['Abandonment Rate'].round(1)
-        display_df['Avg Cart Value'] = display_df['Avg Cart Value'].round(3)
+        display_df['Avg Cart Value'] = display_df['Avg Cart Value'].round(2)
         display_df['Avg Engagement'] = display_df['Avg Engagement'].round(3)
         display_df['Return User Rate'] = display_df['Return User Rate'].round(1)
         
@@ -268,15 +277,22 @@ class SegmentAnalysisTab:
         """Render static recovery strategies"""
         create_section("🛠️ Recovery Strategies", "Pre-defined Segment-Specific Actions")
         
-        if self.segmenter is None:
+        if self.segmenter is None or self.df is None:
             return
         
         st.subheader("🎯 Segment-Specific Recovery Strategies")
         
         # Display strategies for each segment
         for segment_id, profile in self.segmenter.segment_profiles.items():
-            segment_name = profile['segment_name']
+            segment_name = profile.get('segment_name', f'Segment {segment_id}')
             strategy = self.segment_strategies.get(segment_name, {})
+            
+            # Calculate actual metrics from data
+            segment_mask = self.df['segment'] == segment_id
+            segment_df = self.df[segment_mask]
+            segment_size = len(segment_df)
+            abandonment_rate = (segment_df['abandoned'].mean() * 100) if segment_size > 0 else 0
+            avg_cart_value = segment_df['cart_value'].mean() if segment_size > 0 else 0
             
             with st.expander(f"📋 {segment_name} - {len(strategy.get('strategies', []))} Strategies", expanded=False):
                 
@@ -310,15 +326,15 @@ class SegmentAnalysisTab:
                     
                 with col2:
                     st.write("**Segment Stats:**")
-                    st.metric("Customers", f"{profile['size']:,}")
-                    st.metric("Abandonment", f"{profile['abandonment_rate']:.1f}%")
-                    st.metric("Avg Cart Value", f"₹{profile['avg_cart_value']:.2f}")
+                    st.metric("Customers", f"{segment_size:,}")
+                    st.metric("Abandonment", f"{abandonment_rate:.1f}%")
+                    st.metric("Avg Cart Value", f"₹{avg_cart_value:.2f}")
 
 
     def run(self):
         
         # Load data and segmenter
-        with st.spinner("🔄 Loading segmentation data and AI models..."):
+        with st.spinner("🔄 Loading segmentation data and models..."):
             self.df, self.segmenter = self.load_data_and_segmenter()
         
         if self.segmenter and self.df is not None:
