@@ -14,7 +14,7 @@ import sys
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
 
-from src.models.model import (
+from model import (
     LogisticRegressionGD, KNNClassifier, DecisionTreeClassifierManual,
     RandomForestManual, GradientBoostingClassifierManual,
     accuracy_score, precision_score_manual, recall_score_manual, 
